@@ -9,19 +9,27 @@ import (
 
 type Configurations struct {
 	listen    ListenConfigurations
-	mode      string
 	speedtest string
 	router    RouterConfigurations
 	vendors   []string
 }
 
 type ListenConfigurations struct {
-	http  int
-	https int
+	http     int
+	https    int
+	username string
+	password string
 }
 
 type RouterConfigurations struct {
-	ip       string
+	mode           string
+	config_file    string
+	start_command  string
+	stop_command   string
+	status_command string
+	// SSH Only
+	host     string
+	port     int
 	user     string
 	password string
 }
@@ -103,7 +111,6 @@ func GetPathKeys(vendor string, path []string) ([]string, error) {
 	pdata := v.GetStringMap(fullpath)
 	log.Printf("fullpath %s", fullpath)
 	keys := make([]string, 0, len(pdata))
-	//	log.Printf("WTF: %s", strings.Join(pdata, ", "))
 	for k, _ := range pdata {
 		keys = append(keys, k)
 	}

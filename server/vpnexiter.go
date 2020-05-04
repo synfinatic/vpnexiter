@@ -80,7 +80,14 @@ func speedtest(c echo.Context) error {
 }
 
 func update(c echo.Context) error {
-	return c.String(http.StatusOK, "incomplete")
+	v := viper.GetViper()
+	vendor := v.Param("vendor")
+	ipaddr := v.Param("ipaddr")
+	jdata, err := vpnexiter.Update(vendor, ipaddr)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSONPretty(http.StatusOK, "OK", " ")
 }
 
 func servers(c echo.Context) error {
@@ -123,7 +130,8 @@ func main() {
 	viper.SetDefault("listen.http", 8000)
 	viper.SetDefault("listen.https", -1)
 	viper.SetDefault("mode", "ssh")
-	viper.SetDefault("router.ip", "192.168.1.1")
+	viper.SetDefault("router.host", "192.168.1.1")
+	viper.SetDefault("router.port", 22)
 	viper.SetDefault("router.user", "admin")
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -173,6 +181,6 @@ func main() {
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4", servers)
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4/:l5", servers)
 	e.GET("/speedtest/:ipaddr", speedtest)
-	e.GET("/update/:router/:ipaddr", update)
+	e.GET("/update/:vendor/:ipaddr", update)
 	e.Logger.Fatal(e.Start(":5000"))
 }
