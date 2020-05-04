@@ -8,10 +8,11 @@ import (
 )
 
 type Configurations struct {
-	listen  ListenConfigurations
-	mode    string
-	router  RouterConfigurations
-	vendors []string
+	listen    ListenConfigurations
+	mode      string
+	speedtest string
+	router    RouterConfigurations
+	vendors   []string
 }
 
 type ListenConfigurations struct {
@@ -35,14 +36,14 @@ func GetVendor(vendor string) (map[string]interface{}, error) {
 	}
 }
 
-func Levels(vendor string) ([]string, error) {
+func Levels(vendor string) []string {
+	var empty []string
 	v := viper.GetViper()
 	levels := fmt.Sprintf("%s.levels", vendor)
 	if v.IsSet(levels) {
-		return v.GetStringSlice(levels), nil
+		return v.GetStringSlice(levels)
 	} else {
-		log.Printf("Levels: %s / %s", vendor, levels)
-		return nil, fmt.Errorf("missing `levels` in vendor: %s", vendor)
+		return empty
 	}
 }
 
@@ -69,10 +70,7 @@ func GetServers(vendor string, path []string) ([]string, error) {
 }
 
 func FindLevel(vendor, string, level string) (int, error) {
-	l, err := Levels(vendor)
-	if err != nil {
-		return -1, err
-	}
+	l := Levels(vendor)
 	for i, n := range l {
 		if n == level {
 			return i, nil
@@ -84,8 +82,11 @@ func FindLevel(vendor, string, level string) (int, error) {
 
 func GetPath(vendor string, path []string) (string, error) {
 	v := viper.GetViper()
-	vars := strings.Join(path, ".")
-	fullpath := fmt.Sprintf("%s.servers.%s", vendor, vars)
+	fullpath := fmt.Sprintf("%s.servers", vendor)
+	if len(path) > 0 {
+		vars := strings.Join(path, ".")
+		fullpath = fmt.Sprintf("%s.%s", fullpath, vars)
+	}
 	if !v.IsSet(fullpath) {
 		return "", fmt.Errorf("Invalid path: %s", fullpath)
 	}
@@ -96,9 +97,15 @@ func GetPathKeys(vendor string, path []string) ([]string, error) {
 	v := viper.GetViper()
 	fullpath, err := GetPath(vendor, path)
 	if err != nil {
-		log.Printf("GetPathValues: %s / %s", vendor, fullpath)
+		log.Printf("GetPathKeys: %s / %s", vendor, fullpath)
 		return nil, err
-	} else {
-		return v.GetStringSlice(fullpath), nil
 	}
+	pdata := v.GetStringMap(fullpath)
+	log.Printf("fullpath %s", fullpath)
+	keys := make([]string, 0, len(pdata))
+	//	log.Printf("WTF: %s", strings.Join(pdata, ", "))
+	for k, _ := range pdata {
+		keys = append(keys, k)
+	}
+	return keys, nil
 }

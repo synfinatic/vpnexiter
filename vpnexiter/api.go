@@ -26,7 +26,10 @@ func Server2ServerList(vendor string, path []string) (*ServerList, error) {
 	for _, s := range servers {
 		ips, err := net.LookupHost(s)
 		if err != nil {
+			// failed to resolve, so store as-is
 			log.Printf("Unable to resolve: %s", s)
+			l := []string{s}
+			slist.IPs[s] = l
 			continue
 		}
 		slist.IPs[s] = ips
