@@ -1,8 +1,10 @@
 package vpnexiter
 
 import (
+	"fmt"
+	scp "github.com/bramvdbogaerde/go-scp"
+	"github.com/bramvdbogaerde/go-scp/auth"
 	"github.com/spf13/viper"
-	"github.com/synfinatic/vpnexiter/scp"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"log"
@@ -44,41 +46,44 @@ func Server2ServerList(vendor string, path []string) (*ServerList, error) {
 }
 
 type Config struct {
-	IPAddr string
+	VpnServer string
 }
 
 func Update(vendor string, ipaddr string) error {
-	mode := v.GetString("mode")
+	v := viper.GetViper()
+	mode := v.GetString("router.mode")
 	if mode == "ssh" {
+		log.Printf("Updating via ssh %s / %s", vendor, ipaddr)
 		return update_ssh(vendor, ipaddr)
 	} else if mode == "local" {
+		log.Printf("Updating via local %s / %s", vendor, ipaddr)
 		return update_local(vendor, ipaddr)
 	} else {
-		return fmt.Error("Unsupported mode: %s", mode)
+		return fmt.Errorf("Unsupported mode: %s", mode)
 	}
 }
 
 func create_config(vendor string, ipaddr string) (string, error) {
 	v := viper.GetViper()
-	tmpl := viper.GetString(vendor + ".config_template")
-	output := viper.GetString("router.config_file")
+	tmpl := v.GetString(vendor + ".config_template")
 	conf := Config{
-		IPAddr: ipaddr,
+		VpnServer: ipaddr,
 	}
 	tfile, err := template.ParseFiles(tmpl)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	out, err := ioutil.TempFile("", "vpnexiter")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer out.Close()
 
-	err := tfile.Execute(out, conf)
+	err = tfile.Execute(out, conf)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	log.Printf("Success generating temporary config file: %s", out.Name())
 	return out.Name(), nil
 }
 
@@ -89,10 +94,12 @@ func update_local(vendor string, ipaddr string) error {
 		return err
 	}
 
-	err := os.Rename(cfile.Name(), v.GetString(vendor+".config_template"))
+	config_file := v.GetString("router.config_file")
+	err = os.Rename(cfile, config_file)
 	if err != nil {
 		return err
 	}
+	log.Printf("Success moving %s to %s", cfile, config_file)
 	return nil
 }
 
@@ -108,31 +115,42 @@ func update_ssh(vendor string, ipaddr string) error {
 
 	cfile, err := create_config(vendor, ipaddr)
 	if err != nil {
+		log.Printf("unable to create_config")
 		return err
 	}
 
-	client, err := ssh.Dial("tcp", router, &ssh.ClientConfig{
-		User: username,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
-		HostKeyCallback: ssh.InsecureIngoreHostKey(), // FIXME
-	})
+	log.Printf("create_config: %s", cfile)
+	clientConfig, _ := auth.PasswordKey(username, password, ssh.InsecureIgnoreHostKey())
+
+	client := scp.NewClient(router, &clientConfig)
+
+	err = client.Connect()
 	if err != nil {
+		log.Printf("client.Connect() failed")
 		return err
 	}
+	log.Printf("client.Connect()")
 
-	session, err := client.NewSession()
+	defer client.Close()
+
+	f, _ := os.Open(cfile)
+	defer f.Close()
+
+	s, err := f.Stat()
 	if err != nil {
+		log.Printf("Unable to Stat() %s", f.Name())
 		return err
 	}
-	defer session.Close()
+	err = client.CopyFile(f, config_file, "0644")
+	if err != nil {
+		log.Printf("failed client.CopyFile() %s", err.Error())
+		return err
+	}
+	log.Printf("Success copying %s to %s/%s", cfile, router, config_file)
+	err = os.Remove(cfile)
+	if err != nil {
+		log.Printf("Error deleting %s", cfile)
+	}
 
-	err := scp.CopyPath(cfile, config_file, session)
-	if _, err := os.Stat(config_file); os.IsNotExist(err) {
-		return err
-	} else {
-		log.Printf("Succes copying to %s", config_file)
-	}
 	return nil
 }
