@@ -1,10 +1,13 @@
 package main
 
 import (
+	"crypto/subtle"
 	"fmt"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"github.com/spf13/viper"
 	"github.com/synfinatic/vpnexiter/vpnexiter"
+	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"io"
 	"log"
@@ -47,6 +50,9 @@ func url(command string, c echo.Context) string {
 	return u
 }
 
+/*
+ * For the given vendor/level, return the keys of the level below
+ */
 func level(c echo.Context) error {
 	vendor := c.Param("vendor")
 	var path []string
@@ -67,9 +73,13 @@ func level(c echo.Context) error {
 	return c.JSONPretty(http.StatusOK, keys, " ")
 }
 
-func speedtest(c echo.Context) error {
+/*
+ * Grab a list of "local" speedtest servers
+ */
+func speedtest_servers(c echo.Context) error {
 	v := viper.GetViper()
-	e := exec.Command(v.GetString("speedtest"), "-f", "json-pretty")
+
+	e := exec.Command(v.GetString("speedtest"), "--servers", "-f", "json-pretty")
 	output, err := e.Output()
 	if err != nil {
 		log.Printf("error at output")
@@ -79,6 +89,37 @@ func speedtest(c echo.Context) error {
 	return c.String(http.StatusOK, string(output))
 }
 
+/*
+ * Run a speedtest test.
+ * Must: Provide the IP address of the VPN server you're egressing from
+ * Optionally: Pick the speedtest.net serverid to egress from
+ */
+func speedtest(c echo.Context) error {
+	v := viper.GetViper()
+	// ipaddr := c.Param("ipaddr")
+	serverid := c.Param("serverid")
+
+	args := []string{"-f", "json-pretty"}
+	if len(serverid) != 0 {
+		log.Printf("Using speedtest server: %s", serverid)
+		args = append(args, "--server-id", serverid)
+	} else {
+		log.Printf("Letting speedtest.net pick our server...")
+	}
+	e := exec.Command(v.GetString("speedtest"), args...)
+
+	output, err := e.Output()
+	if err != nil {
+		log.Printf("error at output")
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.String(http.StatusOK, string(output))
+}
+
+/*
+ * Change egress to the provided vendor/VPN gateway
+ */
 func update(c echo.Context) error {
 	vendor := c.Param("vendor")
 	ipaddr := c.Param("ipaddr")
@@ -89,6 +130,9 @@ func update(c echo.Context) error {
 	return c.JSONPretty(http.StatusOK, "OK", " ")
 }
 
+/*
+ * Returns the server(s) for the given vendor and level
+ */
 func servers(c echo.Context) error {
 	vendor := c.Param("vendor")
 	levels := vpnexiter.Levels(vendor)
@@ -118,6 +162,17 @@ func servers(c echo.Context) error {
 	return c.JSONPretty(http.StatusOK, slist, " ")
 }
 
+func BasicAuthHandler(username string, password string, c echo.Context) (bool, error) {
+	v := viper.GetViper()
+	conf_user := v.GetString("listen.username")
+	conf_pass := v.GetString("listen.password")
+	if subtle.ConstantTimeCompare([]byte(username), []byte(conf_user)) == 1 &&
+		bcrypt.CompareHashAndPassword([]byte(conf_pass), []byte(password)) == nil {
+		return true, nil
+	}
+	return false, nil
+}
+
 func main() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -134,7 +189,7 @@ func main() {
 	viper.SetDefault("router.user", "admin")
 
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading config file, %s", err)
+		fmt.Printf("Error reading config file: %s", err)
 	}
 
 	var vconf vpnexiter.Configurations
@@ -145,6 +200,11 @@ func main() {
 	}
 
 	e := echo.New()
+
+	// Enable basic auth?
+	if viper.IsSet("listen.username") && viper.IsSet("listen.password") {
+		e.Use(middleware.BasicAuth(BasicAuthHandler))
+	}
 
 	// serve static content
 	e.Static("/static", "static")
@@ -179,7 +239,10 @@ func main() {
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3", servers)
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4", servers)
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4/:l5", servers)
+	e.GET("/speedtest/", speedtest)
 	e.GET("/speedtest/:ipaddr", speedtest)
+	e.GET("/speedtest/:serverid", speedtest)
+	e.GET("/speedtest/servers", speedtest_servers)
 	e.GET("/update/:vendor/:ipaddr", update)
 	e.Logger.Fatal(e.Start(":5000"))
 }
