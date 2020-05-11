@@ -208,6 +208,7 @@ func main() {
 
 	// serve static content
 	e.Static("/static", "static")
+	e.File("/", "static/index.html")
 
 	// serve templates
 	t := &Template{
