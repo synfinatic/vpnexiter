@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>VPNExiter</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/jquery.js"></script>
+    <script src="/static/jquery-ui.js"></script>
+    <script>
+        $( function() {
+            $( "#tabs" ).tabs();
+        } );
+    </script>
+</head>
+<body>
+    <div id="tabs">
+        <header>
+            <div class="logo">VPNExiter</div>
+
+            <ul> <!-- class="nav_links"> -->
+                <li><a href="#status">Status</a></li>
+                <li><a href="#select-exit">Select Exit</a></li>
+                <li><a href="#perf-test">Performance Test</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+        </header>
+        <div id="status" class="content">
+            <p>This is some status</p>
+        </div>
+
+        <div id="select-exit" class="content">
+            Select your exit
+        </div>
+
+        <div id="perf-test" class="content">
+            Run Speedtest.net
+        </div>
+
+        <div id="about" class="content">
+            VPNExiter v0.0.1
+        </div>
+    </div>
+    </div>
+
+</body>
+
+</html>
