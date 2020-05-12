@@ -11,7 +11,13 @@
     <script src="/static/jquery-ui.js"></script>
     <script>
         $( function() {
-            $( "#tabs" ).tabs();
+            $( "#tabs" ).tabs({
+                beforeLoad: function(event, ui) {
+                    ui.jqXHR.fail(function() {
+                        ui.panel.html("Couldn't load this tab.  Report a bug?");
+                    });
+                }
+            } );
         } );
     </script>
 </head>
@@ -21,28 +27,21 @@
             <div class="logo">VPNExiter</div>
 
             <ul> <!-- class="nav_links"> -->
-                <li><a href="#status">Status</a></li>
-                <li><a href="#select-exit">Select Exit</a></li>
-                <li><a href="#perf-test">Performance Test</a></li>
-                <li><a href="#about">About</a></li>
+                <li><a href="/status">Status</a></li>
+                <li><a href="/select-exit">Select Exit</a></li>
+                <li><a href="/perf-test">Performance Test</a></li>
+                <li><a href="/version.html">Version</a></li>
             </ul>
         </header>
-        <div id="status" class="content">
-            <p>This is some status</p>
-        </div>
-
-        <div id="select-exit" class="content">
-            Select your exit
-        </div>
-
-        <div id="perf-test" class="content">
-            Run Speedtest.net
-        </div>
-
-        <div id="about" class="content">
-            VPNExiter v0.0.1
-        </div>
-    </div>
+        <p></p>
+        <!-- not sure why I need all of these, but I do! -->
+        <div id="ui-id-2" class="content"></div>
+        <div id="ui-id-3" class="content"></div>
+        <div id="ui-id-4" class="content"></div>
+        <div id="ui-id-5" class="content"></div>
+        <div id="ui-id-6" class="content"></div>
+        <div id="ui-id-7" class="content"></div>
+        <div id="ui-id-8" class="content"></div>
     </div>
 
 </body>

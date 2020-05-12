@@ -24,8 +24,16 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-func Example(c echo.Context) error {
-	return c.Render(http.StatusOK, "hello", "world")
+func Version(c echo.Context) error {
+	type Version struct {
+		Version string
+	}
+	v := Version{"0.0.1"}
+	return c.Render(http.StatusOK, "version.html", v)
+}
+
+func Status(c echo.Context) error {
+	return c.Render(http.StatusOK, "", "")
 }
 
 func vendors(c echo.Context) error {
@@ -212,10 +220,11 @@ func main() {
 
 	// serve templates
 	t := &Template{
-		templates: template.Must(template.ParseGlob("templates/*")),
+		templates: template.Must(template.ParseGlob("templates/*.html")),
 	}
 	e.Renderer = t
-	e.GET("/example.html", Example)
+	e.GET("/version.html", Version)
+	e.GET("/status.html", Status)
 
 	// return list of vendors
 	e.GET("/vendors", vendors)
