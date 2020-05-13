@@ -1,0 +1,17 @@
+{{define "speedtest.html"}}
+<ul>
+    <li>Ping latency: {{ .Ping_latency }}ms / jitter: {{ .Ping_jitter }}</li>
+    <li>Download: {{ .Download_bandwidth }}</li>
+    <li>Upload: {{ .Upload_bandwidth }}</li>
+    <li>ISP: {{ .Isp }}</li>
+    <li>External IP: {{ .External_ip }}</li>
+    <li>Server ID: {{ .Server_id }}</li>
+    <li>Server Name: {{ .Server_name }}</li>
+    <li>Server Location: {{ .Server_location }}</li>
+    <li>Server Host: {{ .Server_host }}</li>
+    <li>Server Port: {{ .Server_port }}</li>
+    <li>Test ID: {{ .Result_id }}</li>
+    <li>Result URL: <a href="{{ .Result_url }}">Click Here</a></li>
+</ul>
+{{end}}
+

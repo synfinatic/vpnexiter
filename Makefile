@@ -25,7 +25,7 @@ test: test-race vet unittest
 
 PHONY: run
 run:
-	go run server/vpnexiter.go
+	go run server/*.go
 
 clean:
 	rm -f main

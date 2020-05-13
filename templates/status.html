@@ -1,0 +1,10 @@
+{{define "status.html"}}
+<ul>
+    <li>Status: {{ .Connected_str }}</li>
+    {{ if .Connected }}
+    <li>Vendor: {{ .Vendor }}</li>
+    <li>Exit Node: {{ .Exit_node }}</li>
+    <li>Exit Path: {{ StringsJoin .Exit_path " / " }}
+    {{ end }}
+</ul>
+{{end}}
