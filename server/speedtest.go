@@ -12,6 +12,7 @@ import (
 )
 
 type SpeedtestResults struct {
+	SpeedtestUrl string // yes, this need to be here ???
 	// GlobalState values
 	Vendor        string
 	Exit_node     string
@@ -42,14 +43,21 @@ type SpeedtestResults struct {
 	Result_url         string
 }
 
-func Speedtest(c echo.Context) error {
+type SpeedtestRemote struct {
+	SpeedtestUrl string
+}
+
+func run_speedtest(c echo.Context) (SpeedtestResults, error) {
 	v := viper.GetViper()
-	if !v.IsSet("speedtest") {
-		return c.Render(http.StatusOK, "error.html", "speedtest is not configured")
+	args := []string{"-f", "json"}
+	if v.IsSet("serverid") {
+		args = append(args, "-s", string(v.GetInt("serverid")))
+	} else if v.IsSet("host") {
+		args = append(args, "-o", string(v.GetInt("host")))
 	}
 
-	name := v.GetString("speedtest")
-	cmd := exec.Command(name, "-f", "json")
+	name := v.GetString("speedtest_cli")
+	cmd := exec.Command(name, args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -58,9 +66,9 @@ func Speedtest(c echo.Context) error {
 	if err != nil {
 		log.Printf("error running %s -f json: %s", name, err)
 		log.Printf("-- stderr:\n%s", stderr.String())
-		errx := fmt.Sprintf("Error running %s -f json: %s<p><pre>%s</pre>",
+		errx := fmt.Errorf("Error running %s -f json: %s<p><pre>%s</pre>",
 			name, err.Error(), stderr.String())
-		return c.Render(http.StatusOK, "error.html", errx)
+		return SpeedtestResults{}, errx
 	}
 	log.Printf("success running %s -f json:", name)
 	log.Printf("-- stdout:\n%s", stdout.String())
@@ -68,10 +76,11 @@ func Speedtest(c echo.Context) error {
 	jdata := make(map[string](interface{}))
 	err = json.Unmarshal(stdout.Bytes(), &jdata)
 	if err != nil {
-		errx := fmt.Sprintf("Error parsing json: %s", err.Error())
-		return c.Render(http.StatusOK, "error.html", errx)
+		errx := fmt.Errorf("Error parsing json: %s", err.Error())
+		return SpeedtestResults{}, errx
 	}
 
+	// Instead of this mess, maybe use: https://github.com/tidwall/gjson
 	ping := jdata["ping"].(map[string]interface{})
 	download := jdata["download"].(map[string]interface{})
 	upload := jdata["upload"].(map[string]interface{})
@@ -84,6 +93,7 @@ func Speedtest(c echo.Context) error {
 	}
 
 	SR := SpeedtestResults{
+		SpeedtestUrl:       "",
 		Vendor:             GS.Vendor,
 		Exit_node:          GS.Exit_node,
 		Exit_path:          GS.Exit_path,
@@ -111,5 +121,26 @@ func Speedtest(c echo.Context) error {
 		Result_id:          result["id"].(string),
 		Result_url:         result["url"].(string),
 	}
-	return c.Render(http.StatusOK, "speedtest.html", SR)
+
+	return SR, nil
+}
+
+func Speedtest(c echo.Context) error {
+	v := viper.GetViper()
+	var err error
+	var SR SpeedtestResults
+	if !v.IsSet("speedtest_url") {
+		if !v.IsSet("speedtest_cli") {
+			return c.Render(http.StatusOK, "error.html", "speedtest is not configured")
+		}
+		SR, err = run_speedtest(c)
+		if err != nil {
+			return c.Render(http.StatusOK, "error.html", err.Error())
+		}
+		return c.Render(http.StatusOK, "speedtest.html", SR)
+	} else {
+		url := v.GetString("speedtest_url")
+		SR := SpeedtestRemote{SpeedtestUrl: url}
+		return c.Render(http.StatusOK, "speedtest.html", SR)
+	}
 }

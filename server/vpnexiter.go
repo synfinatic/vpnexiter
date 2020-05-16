@@ -54,6 +54,14 @@ func Status(c echo.Context) error {
 }
 
 func SelectExit(c echo.Context) error {
+	/*
+		type SelectExit struct {
+			GS  GlobalState
+			Levels      int
+			Exits   interface
+		}
+	*/
+
 	return c.Render(http.StatusOK, "select_exit.html", GS)
 }
 
@@ -66,6 +74,13 @@ func BasicAuthHandler(username string, password string, c echo.Context) (bool, e
 		return true, nil
 	}
 	return false, nil
+}
+
+func empty_string(str string) bool {
+	if str == "" {
+		return true
+	}
+	return false
 }
 
 func main() {
@@ -109,6 +124,8 @@ func main() {
 	// serve templates
 	funcMap := template.FuncMap{
 		"StringsJoin": strings.Join,
+		"EmptyString": empty_string,
+		// "GenerateMenu": GenerateMenu,
 	}
 	t := &Template{
 		templates: template.Must(template.New("main").Funcs(funcMap).ParseGlob("templates/*.html")),
@@ -124,6 +141,9 @@ func main() {
 	 */
 	// return list of vendors
 	e.GET("/vendors", vendors)
+
+	// return a map of all the exits for a vendor
+	e.GET("/exits/:vendor", exits)
 
 	// For the given vendor, return the levels
 	e.GET("/levels/:vendor", levels)
@@ -146,8 +166,8 @@ func main() {
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4", servers)
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4/:l5", servers)
 	e.GET("/speedtest/", speedtest)
-	e.GET("/speedtest/:ipaddr", speedtest)
-	e.GET("/speedtest/:serverid", speedtest)
+	e.GET("/speedtest/host/:host", speedtest)
+	e.GET("/speedtest/id/:serverid", speedtest)
 	e.GET("/speedtest/servers", speedtest_servers)
 	e.GET("/update/:vendor/:ipaddr", update)
 	e.Logger.Fatal(e.Start(":5000"))

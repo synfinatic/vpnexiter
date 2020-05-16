@@ -1,4 +1,5 @@
 {{define "speedtest.html"}}
+{{if EmptyString .SpeedtestUrl}}
 <ul>
     <li>Ping latency: {{ .Ping_latency }}ms / jitter: {{ .Ping_jitter }}</li>
     <li>Download: {{ .Download_bandwidth }}</li>
@@ -13,5 +14,8 @@
     <li>Test ID: {{ .Result_id }}</li>
     <li>Result URL: <a href="{{ .Result_url }}">Click Here</a></li>
 </ul>
+{{else}}
+<iframe width="100%" height="650px" frameborder="0" src="{{ .SpeedtestUrl }}"></iframe>
+{{end}}
 {{end}}
 

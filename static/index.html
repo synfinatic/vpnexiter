@@ -13,6 +13,8 @@
         $( function() {
             $( "#tabs" ).tabs({
                 beforeLoad: function(event, ui) {
+                    ui.panel.html('Running Speedtest...<p><video  width="500" height="500" autoplay loop muted><source src="/static/orb.mp4" type="video/mp4"/></video>');
+
                     ui.jqXHR.fail(function() {
                         ui.panel.html("Couldn't load this tab.  Report a bug?");
                     });

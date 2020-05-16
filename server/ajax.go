@@ -6,6 +6,7 @@ package main
  */
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
 	"github.com/spf13/viper"
@@ -121,7 +122,7 @@ func update(c echo.Context) error {
 	ipaddr := c.Param("ipaddr")
 	err := vpnexiter.Update(vendor, ipaddr)
 	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+		return c.String(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSONPretty(http.StatusOK, "OK", " ")
 }
@@ -156,4 +157,58 @@ func servers(c echo.Context) error {
 	}
 
 	return c.JSONPretty(http.StatusOK, slist, " ")
+}
+
+func exits(c echo.Context) error {
+	exit_map, _, err := _exits(c)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	jdata, err := json.Marshal(exit_map)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSONPretty(http.StatusOK, jdata, " ")
+}
+
+func _exits(c echo.Context) (interface{}, int, error) {
+	vendor := c.Param("vendor")
+	v := viper.GetViper()
+	levels := vpnexiter.Levels(vendor)
+	vpath := vendor + ".servers"
+	lvls := len(levels)
+	switch lvls {
+	case 0:
+		log.Printf("getting servers for %s", vendor)
+		data := v.GetStringSlice(vpath)
+		return data, 0, nil
+	case 1, 2, 3, 4, 5:
+		data := walk_levels(vpath, lvls, 1)
+		return data, lvls, nil
+	default:
+		return nil, 0, fmt.Errorf("Invalid number of vendor levels for %s", vendor)
+	}
+}
+
+/*
+ * Recursively walk the vendor.servers hash map and return
+ */
+
+func walk_levels(path string, levels int, depth int) interface{} {
+	v := viper.GetViper()
+	if levels <= depth {
+		// this level is a map[string]interface
+		us := v.GetStringMap(path)
+		for key, _ := range us {
+			newpath := path + "." + key
+			fmt.Printf("going deeper: %s\n", newpath)
+			us[key] = walk_levels(newpath, levels, depth+1)
+		}
+		return us
+	} else {
+		// this level is the final level and a map[string][]string
+		us := v.GetStringMapStringSlice(path)
+		return us
+	}
 }
