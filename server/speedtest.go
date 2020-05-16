@@ -129,6 +129,7 @@ func Speedtest(c echo.Context) error {
 	v := viper.GetViper()
 	var err error
 	var SR SpeedtestResults
+	// If we don't have a speedtest_url set, use the speedtest_cli
 	if !v.IsSet("speedtest_url") {
 		if !v.IsSet("speedtest_cli") {
 			return c.Render(http.StatusOK, "error.html", "speedtest is not configured")
@@ -137,8 +138,10 @@ func Speedtest(c echo.Context) error {
 		if err != nil {
 			return c.Render(http.StatusOK, "error.html", err.Error())
 		}
+		// render our (ugly as sin) page with results
 		return c.Render(http.StatusOK, "speedtest.html", SR)
 	} else {
+		// we have a speedtest_url, so just embed that an iframe
 		url := v.GetString("speedtest_url")
 		SR := SpeedtestRemote{SpeedtestUrl: url}
 		return c.Render(http.StatusOK, "speedtest.html", SR)

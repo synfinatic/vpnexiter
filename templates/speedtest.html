@@ -1,18 +1,29 @@
 {{define "speedtest.html"}}
 {{if EmptyString .SpeedtestUrl}}
 <ul>
-    <li>Ping latency: {{ .Ping_latency }}ms / jitter: {{ .Ping_jitter }}</li>
-    <li>Download: {{ .Download_bandwidth }}</li>
-    <li>Upload: {{ .Upload_bandwidth }}</li>
+    <li>Ping latency: {{ .Ping_latency }}ms / jitter: {{ .Ping_jitter }}ms</li>
+    <li>Packet Loss: {{ Float64ToStr .Packetloss }}%</li>
+    <li>Download: {{ BpsToMbps .Download_bandwidth }}Mbps</li>
+    <li>Upload: {{ BpsToMbps .Upload_bandwidth }}Mbps</li>
     <li>ISP: {{ .Isp }}</li>
     <li>External IP: {{ .External_ip }}</li>
     <li>Server ID: {{ .Server_id }}</li>
     <li>Server Name: {{ .Server_name }}</li>
     <li>Server Location: {{ .Server_location }}</li>
     <li>Server Host: {{ .Server_host }}</li>
-    <li>Server Port: {{ .Server_port }}</li>
-    <li>Test ID: {{ .Result_id }}</li>
-    <li>Result URL: <a href="{{ .Result_url }}">Click Here</a></li>
+    <!--
+        The Result_url contains the speedtest.net results on their website
+        in a pretty manner.  I wonder if we can do something pretty with it?
+        Sadly, speedtest does validate the result ID and prevent different
+        orgs from seeing another org's results.
+        This is the DOM selector for the results if you hit the ResultURL:
+
+        #container > div > div.main-content > div > div > div >
+                div.pure-u-custom-speedtest > div.speedtest-container.main-row
+
+        Can we just do a Ajax call and return that part of the dom in an iframe?
+    -->
+    <li>Result on Speedtest.net: <a href="{{ .Result_url }}">Click Here</a></li>
 </ul>
 {{else}}
 <iframe width="100%" height="650px" frameborder="0" src="{{ .SpeedtestUrl }}"></iframe>

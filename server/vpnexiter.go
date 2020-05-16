@@ -83,6 +83,19 @@ func empty_string(str string) bool {
 	return false
 }
 
+// speedtest -f json returns bytes/sec
+func bps_to_mbps(bps float64) string {
+	return fmt.Sprintf("%.02f", (bps * 8 / (1000 * 1000)))
+}
+
+func float64_to_str(val float64) string {
+	return fmt.Sprintf("%.02f", val)
+}
+
+func float64_to_int(val float64) int {
+	return (int)(val)
+}
+
 func main() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -123,8 +136,11 @@ func main() {
 
 	// serve templates
 	funcMap := template.FuncMap{
-		"StringsJoin": strings.Join,
-		"EmptyString": empty_string,
+		"StringsJoin":  strings.Join,
+		"EmptyString":  empty_string,
+		"BpsToMbps":    bps_to_mbps,
+		"Float64ToInt": float64_to_int,
+		"Float64ToStr": float64_to_str,
 		// "GenerateMenu": GenerateMenu,
 	}
 	t := &Template{
