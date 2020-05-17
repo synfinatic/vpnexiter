@@ -54,15 +54,8 @@ func Status(c echo.Context) error {
 }
 
 func SelectExit(c echo.Context) error {
-	/*
-		type SelectExit struct {
-			GS  GlobalState
-			Levels      int
-			Exits   interface
-		}
-	*/
-
-	return c.Render(http.StatusOK, "select_exit.html", GS)
+	vendors := vpnexiter.LoadVendors()
+	return c.Render(http.StatusOK, "select_exit.html", vendors)
 }
 
 func BasicAuthHandler(username string, password string, c echo.Context) (bool, error) {
