@@ -163,6 +163,17 @@ func (sm ServerMap) getServers(location []string) ([]string, error) {
 }
 
 /*
+ * Needed for importing into the html/template
+ */
+func (sm ServerMap) GenHTMLTemplate() (template.HTML, error) {
+	s, err := sm.GenHTML()
+	if err != nil {
+		return "", err
+	}
+	return template.HTML(s), nil
+}
+
+/*
  * Generates a HTML tree representation of a ServerMap
  */
 func (sm ServerMap) GenHTML() (string, error) {

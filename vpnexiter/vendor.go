@@ -41,12 +41,6 @@ func LoadVendors() map[string]*VendorConfig {
 		} else {
 			build_server_map(&vcmap[vendor].Servers, start, vcmap[vendor].Levels)
 		}
-
-		b, err := vcmap[vendor].Servers.GenHTML()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("%s\n", b)
 	}
 	return vcmap
 }

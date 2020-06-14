@@ -1,22 +1,17 @@
 {{define "select_exit.html"}}
 <script>
     $(function(){
-        $("select_exit").menu();
+        $("#select_exit").menu();
     });
 </script>
 
 <ul id="select_exit">
     <li class="ui-state-disabled"><div>VPN Vendors</div></li>
     {{range $vendor, $vendor_config := .}}
-    <li><div>{{$vendor}}</div></li>
-    <li><div>{{ $vendor_config.Levels }}</div></li>
-        {{if len $vendor_config.Servers.L1}}
-            {{range $location, $server := $vendor_config.Servers.L1}}
-            <li><div>{{$location}} = {{$server}}</div></li>
-            {{end}}
-        {{else}}
-            <li><div>{{$vendor_config.Servers.L0}}</div></li>
-        {{end}}
+    <li><div>{{$vendor}}</div>
+        <div>{{ $vendor_config.Levels }}</div>
+        {{$vendor_config.Servers.GenHTMLTemplate}}
+    </li>
     {{end}}
 </ul>
 
