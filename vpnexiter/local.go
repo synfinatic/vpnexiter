@@ -82,7 +82,7 @@ func RestartIpSecLocal(vendor string) error {
 		time.Sleep(duration)
 	}
 	if !vpn_up {
-		return fmt.Errorf("VPN to %s did not come up after %d seconds", seconds)
+		return fmt.Errorf("VPN to %s did not come up after %d seconds", vendor, seconds)
 	}
 	return nil
 }

@@ -36,7 +36,10 @@ clean-go:
 vpnexiter: $(OUTPUT_VPNEXIT)
 
 $(OUTPUT_VPNEXIT): prepare
-	go build -ldflags $(LDFLAGS) -o $(OUTPUT_VPNEXIT) server/vpnexiter.go
+	go build -ldflags $(LDFLAGS) -o $(OUTPUT_VPNEXIT) server/*.go
+
+debug:
+	dlv debug server/*.go
 
 PHONY: docker-run
 	docker run -it --rm -p 5000:5000/tcp $(DOCKER_REPO)/$(VPNEXIT_NAME):latest

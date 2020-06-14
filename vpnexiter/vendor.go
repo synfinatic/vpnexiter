@@ -14,15 +14,6 @@ type VendorConfig struct {
 	Servers  ServerMap
 }
 
-type ServerMap struct {
-	L0 []string
-	L1 map[string][]string
-	L2 map[string]map[string][]string
-	L3 map[string]map[string]map[string][]string
-	L4 map[string]map[string]map[string]map[string][]string
-	L5 map[string]map[string]map[string]map[string]map[string][]string
-}
-
 /*
  * Loads the vendor: map configuration
  */
@@ -31,70 +22,65 @@ func LoadVendors() map[string]*VendorConfig {
 	vcmap := map[string]*VendorConfig{}
 
 	for _, vendor := range v.GetStringSlice("vendors") {
-		log.Printf("loading %s", vendor)
+		log.Printf("Loading: %s", vendor)
+
 		vcmap[vendor] = &VendorConfig{
-			Name:   vendor,
-			Levels: []string{},
-			Servers: ServerMap{
-				L0: []string{},
-				L1: map[string][]string{},
-			},
+			Name:    vendor,
+			Levels:  []string{},
+			Servers: *newServerMap(),
 		}
+
 		if v.IsSet(vendor + ".levels") {
-			vcmap[vendor].Levels = v.GetStringSlice(vendor + ".levels")
+			vcmap[vendor].Levels = append(vcmap[vendor].Levels, v.GetStringSlice(vendor+".levels")...)
 		}
-		vcmap[vendor].Servers.build_server_map(vendor, vcmap[vendor].Levels)
-		log.Printf("vcmap for %s = %s", vendor, vcmap[vendor].Servers)
+
+		start := []string{vendor, "servers"}
+		if len(vcmap[vendor].Levels) == 0 {
+			search := strings.Join(start, ".")
+			vcmap[vendor].Servers.appendList(v.GetStringSlice(search))
+		} else {
+			build_server_map(&vcmap[vendor].Servers, start, vcmap[vendor].Levels)
+		}
+
+		b, err := vcmap[vendor].Servers.GenHTML()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("%s\n", b)
 	}
 	return vcmap
 }
 
 /*
- * Loads the vendor.servers into a ServerMap
+ * Recursive function to populate the ServerMap with the config
+ * data from Viper
  */
-func (sm *ServerMap) build_server_map(vendor string, levels []string) {
-	level_cnt := len(levels)
-	start := []string{vendor, "servers"}
-	sm.get_servers(start, 0, level_cnt)
-}
-
-/*
- * Recursive helper for build_server_map() to walk the tree
- */
-func (sm *ServerMap) get_servers(location []string, level int, max_levels int) {
+func build_server_map(sm *ServerMap, location []string, levels []string) {
 	v := viper.GetViper()
+	level_cnt := len(levels)
 	search := strings.Join(location, ".")
-	if level < max_levels {
-		log.Printf("processing %s", search)
-		for k, _ := range v.GetStringMap(search) {
-			// recurse further
-			loc := append(location, k)
-			sm.get_servers(loc, level+1, max_levels)
+
+	if level_cnt == 1 {
+		// key := location[len(location)-1]
+		for key, _ := range v.GetStringMap(search) {
+			server_search := fmt.Sprintf("%s.%s", search, key)
+			servers := v.GetStringSlice(server_search)
+			err := sm.addList(key, servers)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else {
-		// End of the line or when len(levels) == 0
-		log.Printf("assigning %s", search)
-		key := strings.Join(location[2:], "$")
-		sm.set_level(max_levels, key, v.GetStringSlice(search))
-	}
-}
-
-/*
- * Actually does the work of setting our values in the ServerMap
- */
-func (sm *ServerMap) set_level(max_levels int, key string, values []string) error {
-	switch max_levels {
-	case 0:
-		// max_levels = 0 is a special case
-		log.Printf("Setting sm.L0 = %s", values)
-		sm.L0 = values
-		return nil
-	case 1, 2, 3, 4, 5:
-		// right now we use '$' to delim fields and put everything in L1
-		// rather than a multi-dimentional L2, L3...
-		sm.L1[key] = values
-		return nil
-	default:
-		return fmt.Errorf("Invalid max_levels (%d)  Must be 0-5", max_levels)
+		// pop off the next level
+		levels := levels[1:len(levels)]
+		// Iterate over our Config Viper map[string]inteface{}
+		for key, _ := range v.GetStringMap(search) {
+			loc := append(location, key)
+			new_map := newServerMap()
+			// attach our new_map to ourself
+			sm.addMap(key, new_map)
+			// recurse
+			build_server_map(new_map, loc, levels)
+		}
 	}
 }
