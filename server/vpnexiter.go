@@ -54,8 +54,14 @@ func Status(c echo.Context) error {
 }
 
 func SelectExit(c echo.Context) error {
-	vendors := vpnexiter.LoadVendors()
-	return c.Render(http.StatusOK, "select_exit.html", vendors)
+	exit := c.Param("exit")
+	if exit == "" {
+		vendors := vpnexiter.LoadVendors()
+		return c.Render(http.StatusOK, "select_exit.html", vendors)
+	} else {
+		// FIXME: actually do something useful here
+		return Version(c)
+	}
 }
 
 func BasicAuthHandler(username string, password string, c echo.Context) (bool, error) {
@@ -140,9 +146,10 @@ func main() {
 		templates: template.Must(template.New("main").Funcs(funcMap).ParseGlob("templates/*.html")),
 	}
 	e.Renderer = t
-	e.GET("/version.html", Version)
-	e.GET("/status.html", Status)
-	e.GET("/select_exit.html", SelectExit)
+	e.GET("/version", Version)
+	e.GET("/status", Status)
+	e.GET("/select_exit", SelectExit)
+	e.GET("/select_exit/:exit", SelectExit)
 	e.GET("/speedtest.html", Speedtest)
 
 	/*

@@ -8,9 +8,11 @@
 <ul id="select_exit">
     <li class="ui-state-disabled"><div>VPN Vendors</div></li>
     {{range $vendor, $vendor_config := .}}
-    <li><div>{{$vendor}}</div>
-        <div>{{ $vendor_config.Levels }}</div>
+    <li><div>{{$vendor}}</div><ul>
+        <li>
         {{$vendor_config.Servers.GenHTMLTemplate}}
+        </li>
+        </ul>
     </li>
     {{end}}
 </ul>

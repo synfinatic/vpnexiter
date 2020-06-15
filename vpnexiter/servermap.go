@@ -166,8 +166,10 @@ func (sm ServerMap) getServers(location []string) ([]string, error) {
  * Needed for importing into the html/template
  */
 func (sm ServerMap) GenHTMLTemplate() (template.HTML, error) {
-	s, err := sm.GenHTML()
+	// FIXME: is there some way to pass the url in from the select_exit.html template?
+	s, err := sm.GenHTML("/select_exit")
 	if err != nil {
+		log.Fatal(err.Error())
 		return "", err
 	}
 	return template.HTML(s), nil
@@ -176,22 +178,31 @@ func (sm ServerMap) GenHTMLTemplate() (template.HTML, error) {
 /*
  * Generates a HTML tree representation of a ServerMap
  */
-func (sm ServerMap) GenHTML() (string, error) {
+func (sm ServerMap) GenHTML(baseurl string) (string, error) {
 	var html bytes.Buffer
 
-	list_tmpl, _ := template.New("list").Parse(
-		heredoc.Doc(
-			`{{range $name := .}}
+	/*
+	 * Mix Sprintf & template because you can't access a top
+	 * level variable (baseurl) from inside a loop (range exits)
+	 * because html.template kinda sucks
+	 */
+	list_tmpl, _ := template.New("server_list").Parse(
+		fmt.Sprintf(
+			heredoc.Doc(
+				`{{range $name := .}}
 	<li>
-		<div>{{$name}}</div>
+		<div><a href="%s/{{$name}}">{{$name}}</a></div>
 	</li>
 {{end}}`,
-		))
+			),
+			baseurl),
+	)
 
 	if sm.isList() {
 		l, _ := sm.getList()
 		err := list_tmpl.Execute(&html, l)
 		if err != nil {
+			log.Fatal(err.Error())
 			return "", err
 		}
 	} else if sm.isMap() {
@@ -199,7 +210,7 @@ func (sm ServerMap) GenHTML() (string, error) {
 		for key, value := range m {
 			header := fmt.Sprintf("<li><div>%s</div><ul>", key)
 			html.Write([]byte(header))
-			body, err := value.GenHTML()
+			body, err := value.GenHTML(baseurl)
 			if err != nil {
 				return "", err
 			}
