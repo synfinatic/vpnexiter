@@ -53,17 +53,6 @@ func Status(c echo.Context) error {
 	return c.Render(http.StatusOK, "status.html", GS)
 }
 
-func SelectExit(c echo.Context) error {
-	exit := c.Param("exit")
-	if exit == "" {
-		vendors := vpnexiter.LoadVendors()
-		return c.Render(http.StatusOK, "select_exit.html", vendors)
-	} else {
-		// FIXME: actually do something useful here
-		return Version(c)
-	}
-}
-
 func BasicAuthHandler(username string, password string, c echo.Context) (bool, error) {
 	v := viper.GetViper()
 	conf_user := v.GetString("listen.username")

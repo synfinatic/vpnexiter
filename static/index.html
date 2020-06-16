@@ -15,10 +15,29 @@
         $( function() {
             $( "#tabs" ).tabs({
                 beforeLoad: function(event, ui) {
-                    ui.panel.html('Running Speedtest...<p><video  width="500" height="500" autoplay loop muted><source src="/static/orb.mp4" type="video/mp4"/></video>');
+                    x = $(ui.panel).attr('id');
+                    if (x === "ui-id-4") {
+                        // Select Exit
+                        ui.panel.html(`
+                            Loading VPN Servers...<p>
+                            <video  width="500" height="500" autoplay loop muted>
+                            <source src="/static/orb.mp4" type="video/mp4"/> </video>
+                        `);
+                    } else if (x === "ui-id-6") {
+                        // Speedtest
+                        ui.panel.html(
+                            `
+                            Running Speedtest...<p>
+                            <video  width="500" height="500" autoplay loop muted>
+                            <source src="/static/orb.mp4" type="video/mp4"/> </video>
+                            `);
+                    }
 
                     ui.jqXHR.fail(function() {
-                        ui.panel.html("Couldn't load this tab.  Report a bug?");
+                        ui.panel.html(`
+                        Couldn't load this tab.
+                            <a href="https://github.com/synfinatic/vpnexiter/ticket/new">Report a bug?</a>
+                        `);
                     });
                 }
             } );
@@ -28,7 +47,14 @@
 <body>
     <div id="tabs">
         <header>
-            <div class="logo">VPNExiter</div>
+            <div class="title_block">
+                <div class="wrapper">
+                    <div class="logo">VPNExiter</div>
+                    <!--
+                    <div class="subtitle">...routing traffic since the year of the Murder Hornets.</div>
+                    -->
+                </div>
+            </div>
 
             <ul> <!-- class="nav_links"> -->
                 <li><a href="/status">Status</a></li>

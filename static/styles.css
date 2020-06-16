@@ -27,11 +27,22 @@ body {
     font-size: 26px;
     color: #edf0f1;
     text-decoration: none;
+    cursor: pointer;
+    margin-right: 20px;
+    margin-left: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
-.logo {
-    cursor: pointer;
-    margin-right: auto;
+.title_block {
+}
+
+.subtitle {
+    font-size: 0.8em;
+    text-align: right;
+}
+
+.wrapper {
 }
 
 .ui-menu, .ui-tabs-nav li {

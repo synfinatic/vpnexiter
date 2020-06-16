@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"log"
+	"net"
 	"strings"
 )
 
@@ -39,7 +40,8 @@ func LoadVendors() map[string]*VendorConfig {
 			search := strings.Join(start, ".")
 			vcmap[vendor].Servers.appendList(v.GetStringSlice(search))
 		} else {
-			build_server_map(&vcmap[vendor].Servers, start, vcmap[vendor].Levels)
+			resolve := v.GetBool(fmt.Sprintf("%s.resolve_servers", vendor))
+			build_server_map(&vcmap[vendor].Servers, start, vcmap[vendor].Levels, resolve)
 		}
 	}
 	return vcmap
@@ -49,7 +51,7 @@ func LoadVendors() map[string]*VendorConfig {
  * Recursive function to populate the ServerMap with the config
  * data from Viper
  */
-func build_server_map(sm *ServerMap, location []string, levels []string) {
+func build_server_map(sm *ServerMap, location []string, levels []string, resolve bool) {
 	v := viper.GetViper()
 	level_cnt := len(levels)
 	search := strings.Join(location, ".")
@@ -59,9 +61,29 @@ func build_server_map(sm *ServerMap, location []string, levels []string) {
 		for key, _ := range v.GetStringMap(search) {
 			server_search := fmt.Sprintf("%s.%s", search, key)
 			servers := v.GetStringSlice(server_search)
-			err := sm.addList(key, servers)
-			if err != nil {
-				log.Fatal(err)
+			if resolve {
+				l := newServerMap()
+				for _, fqdn := range servers {
+					svrs := []string{}
+					addrs, err := net.LookupHost(fqdn)
+					if err != nil {
+						log.Printf("Error resolving %s: %s", fqdn, err.Error())
+						svrs = append(svrs, fqdn)
+					} else {
+						svrs = append(svrs, addrs...)
+					}
+					l.addList(fqdn, svrs)
+				}
+				err := sm.addMap(key, l)
+				// err := sm.addList(key, svrs)
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				err := sm.addList(key, servers)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	} else {
@@ -74,7 +96,7 @@ func build_server_map(sm *ServerMap, location []string, levels []string) {
 			// attach our new_map to ourself
 			sm.addMap(key, new_map)
 			// recurse
-			build_server_map(new_map, loc, levels)
+			build_server_map(new_map, loc, levels, resolve)
 		}
 	}
 }

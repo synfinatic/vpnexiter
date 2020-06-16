@@ -212,3 +212,14 @@ func walk_levels(path string, levels int, depth int) interface{} {
 		return us
 	}
 }
+
+func SelectExit(c echo.Context) error {
+	exit := c.Param("exit")
+	if exit == "" {
+		vendors := vpnexiter.LoadVendors()
+		return c.Render(http.StatusOK, "select_exit.html", vendors)
+	} else {
+		// FIXME: actually do something useful here
+		return Version(c)
+	}
+}
