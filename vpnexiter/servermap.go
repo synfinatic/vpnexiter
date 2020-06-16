@@ -6,6 +6,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"html/template"
 	"log"
+	"sort"
 	"strings"
 )
 
@@ -207,7 +208,13 @@ func (sm ServerMap) GenHTML(baseurl string) (string, error) {
 		}
 	} else if sm.isMap() {
 		m, _ := sm.getMap()
-		for key, value := range m {
+		mapkeys := []string{}
+		for key, _ := range m {
+			mapkeys = append(mapkeys, key)
+		}
+		sort.Strings(mapkeys)
+		for _, key := range mapkeys {
+			value := m[key]
 			header := fmt.Sprintf("<li><div>%s</div><ul>", key)
 			html.Write([]byte(header))
 			body, err := value.GenHTML(baseurl)
