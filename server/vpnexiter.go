@@ -138,7 +138,7 @@ func main() {
 	e.GET("/version", Version)
 	e.GET("/status", Status)
 	e.GET("/select_exit", SelectExit)
-	e.GET("/select_exit/:exit", SelectExit)
+	e.GET("/select_exit/:vendor/:exit", SelectExit)
 	e.GET("/speedtest.html", Speedtest)
 
 	/*

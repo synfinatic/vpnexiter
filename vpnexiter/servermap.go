@@ -11,14 +11,18 @@ import (
 )
 
 type ServerMap struct {
-	List []string
-	Map  map[string]ServerMap
+	List     []string
+	Map      map[string]ServerMap
+	Vendor   string
+	LinkKeys bool
 }
 
-func newServerMap() *ServerMap {
+func newServerMap(vendor string, link_keys bool) *ServerMap {
 	return &ServerMap{
-		List: []string{},
-		Map:  map[string]ServerMap{},
+		Vendor:   vendor,
+		LinkKeys: link_keys,
+		List:     []string{},
+		Map:      map[string]ServerMap{},
 	}
 }
 
@@ -168,7 +172,7 @@ func (sm ServerMap) getServers(location []string) ([]string, error) {
  */
 func (sm ServerMap) GenHTMLTemplate() (template.HTML, error) {
 	// FIXME: is there some way to pass the url in from the select_exit.html template?
-	s, err := sm.GenHTML("/select_exit")
+	s, err := sm.GenHTML("/select_exit", sm.Vendor)
 	if err != nil {
 		log.Fatal(err.Error())
 		return "", err
@@ -176,10 +180,22 @@ func (sm ServerMap) GenHTMLTemplate() (template.HTML, error) {
 	return template.HTML(s), nil
 }
 
+func (sm ServerMap) mapKeyToLabel(key string) (string, error) {
+	if sm.isList() {
+		return "", fmt.Errorf("Can't call getKey() on a List")
+	}
+
+	if !sm.LinkKeys || len(sm.Vendor) == 0 {
+		return key, nil
+	} else {
+		return fmt.Sprintf("<a href=\"select_exit/%s/%s\">%s</a>", sm.Vendor, key, key), nil
+	}
+}
+
 /*
  * Generates a HTML tree representation of a ServerMap
  */
-func (sm ServerMap) GenHTML(baseurl string) (string, error) {
+func (sm ServerMap) GenHTML(baseurl string, vendor string) (string, error) {
 	var html bytes.Buffer
 
 	/*
@@ -192,11 +208,11 @@ func (sm ServerMap) GenHTML(baseurl string) (string, error) {
 			heredoc.Doc(
 				`{{range $name := .}}
 	<li>
-		<div><a href="%s/{{$name}}">{{$name}}</a></div>
+		<div><a href="%s/%s/{{$name}}">{{$name}}</a></div>
 	</li>
 {{end}}`,
 			),
-			baseurl),
+			baseurl, vendor),
 	)
 
 	if sm.isList() {
@@ -215,11 +231,15 @@ func (sm ServerMap) GenHTML(baseurl string) (string, error) {
 		sort.Strings(mapkeys)
 		for _, key := range mapkeys {
 			value := m[key]
-			header := fmt.Sprintf("<li><div>%s</div><ul>", key)
-			html.Write([]byte(header))
-			body, err := value.GenHTML(baseurl)
+			label, err := sm.mapKeyToLabel(key)
 			if err != nil {
-				return "", err
+				log.Fatal(err.Error())
+			}
+			header := fmt.Sprintf("<li><div>%s</div><ul>", label)
+			html.Write([]byte(header))
+			body, err := value.GenHTML(baseurl, sm.Vendor)
+			if err != nil {
+				log.Fatal(err.Error())
 			}
 			tail := fmt.Sprintf("%s</ul></li>\n", body)
 			html.Write([]byte(tail))

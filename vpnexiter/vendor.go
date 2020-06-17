@@ -28,7 +28,7 @@ func LoadVendors() map[string]*VendorConfig {
 		vcmap[vendor] = &VendorConfig{
 			Name:    vendor,
 			Levels:  []string{},
-			Servers: *newServerMap(),
+			Servers: *newServerMap(vendor, false),
 		}
 
 		if v.IsSet(vendor + ".levels") {
@@ -41,7 +41,7 @@ func LoadVendors() map[string]*VendorConfig {
 			vcmap[vendor].Servers.appendList(v.GetStringSlice(search))
 		} else {
 			resolve := v.GetBool(fmt.Sprintf("%s.resolve_servers", vendor))
-			build_server_map(&vcmap[vendor].Servers, start, vcmap[vendor].Levels, resolve)
+			build_server_map(&vcmap[vendor].Servers, vendor, start, vcmap[vendor].Levels, resolve)
 		}
 	}
 	return vcmap
@@ -51,7 +51,7 @@ func LoadVendors() map[string]*VendorConfig {
  * Recursive function to populate the ServerMap with the config
  * data from Viper
  */
-func build_server_map(sm *ServerMap, location []string, levels []string, resolve bool) {
+func build_server_map(sm *ServerMap, vendor string, location []string, levels []string, resolve bool) {
 	v := viper.GetViper()
 	level_cnt := len(levels)
 	search := strings.Join(location, ".")
@@ -62,7 +62,7 @@ func build_server_map(sm *ServerMap, location []string, levels []string, resolve
 			server_search := fmt.Sprintf("%s.%s", search, key)
 			servers := v.GetStringSlice(server_search)
 			if resolve {
-				l := newServerMap()
+				l := newServerMap(vendor, true)
 				for _, fqdn := range servers {
 					svrs := []string{}
 					addrs, err := net.LookupHost(fqdn)
@@ -92,11 +92,11 @@ func build_server_map(sm *ServerMap, location []string, levels []string, resolve
 		// Iterate over our Config Viper map[string]inteface{}
 		for key, _ := range v.GetStringMap(search) {
 			loc := append(location, key)
-			new_map := newServerMap()
+			new_map := newServerMap(vendor, false)
 			// attach our new_map to ourself
 			sm.addMap(key, new_map)
 			// recurse
-			build_server_map(new_map, loc, levels, resolve)
+			build_server_map(new_map, vendor, loc, levels, resolve)
 		}
 	}
 }
