@@ -28,7 +28,7 @@ func LoadVendors() map[string]*VendorConfig {
 		vcmap[vendor] = &VendorConfig{
 			Name:    vendor,
 			Levels:  []string{},
-			Servers: *newServerMap(vendor, false),
+			Servers: *newServerMap(nil, "", vendor, false),
 		}
 
 		if v.IsSet(vendor + ".levels") {
@@ -62,7 +62,7 @@ func build_server_map(sm *ServerMap, vendor string, location []string, levels []
 			server_search := fmt.Sprintf("%s.%s", search, key)
 			servers := v.GetStringSlice(server_search)
 			if resolve {
-				l := newServerMap(vendor, true)
+				l := newServerMap(sm, key, vendor, true)
 				for _, fqdn := range servers {
 					svrs := []string{}
 					addrs, err := net.LookupHost(fqdn)
@@ -92,7 +92,7 @@ func build_server_map(sm *ServerMap, vendor string, location []string, levels []
 		// Iterate over our Config Viper map[string]inteface{}
 		for key, _ := range v.GetStringMap(search) {
 			loc := append(location, key)
-			new_map := newServerMap(vendor, false)
+			new_map := newServerMap(sm, key, vendor, false)
 			// attach our new_map to ourself
 			sm.addMap(key, new_map)
 			// recurse

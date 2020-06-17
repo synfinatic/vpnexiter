@@ -11,14 +11,18 @@ import (
 )
 
 type ServerMap struct {
+	Parent   *ServerMap
+	Name     string
 	List     []string
 	Map      map[string]ServerMap
 	Vendor   string
 	LinkKeys bool
 }
 
-func newServerMap(vendor string, link_keys bool) *ServerMap {
+func newServerMap(parent *ServerMap, name string, vendor string, link_keys bool) *ServerMap {
 	return &ServerMap{
+		Parent:   parent,
+		Name:     name,
 		Vendor:   vendor,
 		LinkKeys: link_keys,
 		List:     []string{},
@@ -81,6 +85,25 @@ func (sm *ServerMap) addMap(key string, mdata *ServerMap) error {
 	}
 	sm.Map[key] = *mdata
 	return nil
+}
+
+/*
+ * Returns the path to our current node
+ */
+func (sm ServerMap) getPath() []string {
+	path := []string{sm.Name}
+	p := sm.Parent
+	// walk up our tree
+	for p != nil {
+		path = append(path, p.Name)
+		p = sm.Parent
+	}
+	// standard in-place reverse slice elements
+	last := len(path) - 1
+	for i := 0; i < len(path)/2; i++ {
+		path[i], path[last-1] = path[last-1], path[i]
+	}
+	return path
 }
 
 /*
@@ -188,7 +211,7 @@ func (sm ServerMap) mapKeyToLabel(key string) (string, error) {
 	if !sm.LinkKeys || len(sm.Vendor) == 0 {
 		return key, nil
 	} else {
-		return fmt.Sprintf("<a href=\"select_exit/%s/%s\">%s</a>", sm.Vendor, key, key), nil
+		return fmt.Sprintf(`<a href="select_exit/%s/%s">%s</a>`, sm.Vendor, key, key), nil
 	}
 }
 

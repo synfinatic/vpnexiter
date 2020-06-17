@@ -91,6 +91,7 @@ Configuring VPNExiter is done via a single <em>config.yaml</em> file.
 
  * *vendor name 1*
     * config_template: *path to config template*
+    * resolve_servers: true|false
     * levels:
         - *level 1*
         - *level 2*
@@ -116,6 +117,7 @@ Configuring VPNExiter is done via a single <em>config.yaml</em> file.
 
  * *vendor name 2*
     * config_template: *path to config template*
+    * resolve_servers: true|false
     * servers:
         - server 1
         - server 2
