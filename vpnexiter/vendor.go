@@ -2,7 +2,6 @@ package vpnexiter
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 	"net"
 	"strings"
@@ -19,10 +18,9 @@ type VendorConfig struct {
  * Loads the vendor: map configuration
  */
 func LoadVendors() map[string]*VendorConfig {
-	v := viper.GetViper()
 	vcmap := map[string]*VendorConfig{}
 
-	for _, vendor := range v.GetStringSlice("vendors") {
+	for _, vendor := range Konf.Strings("vendors") {
 		log.Printf("Loading: %s", vendor)
 
 		vcmap[vendor] = &VendorConfig{
@@ -31,16 +29,16 @@ func LoadVendors() map[string]*VendorConfig {
 			Servers: *newServerMap(nil, "", vendor, false),
 		}
 
-		if v.IsSet(vendor + ".levels") {
-			vcmap[vendor].Levels = append(vcmap[vendor].Levels, v.GetStringSlice(vendor+".levels")...)
+		if Konf.Exists(vendor + ".levels") {
+			vcmap[vendor].Levels = append(vcmap[vendor].Levels, Konf.Strings(vendor+".levels")...)
 		}
 
 		start := []string{vendor, "servers"}
 		if len(vcmap[vendor].Levels) == 0 {
 			search := strings.Join(start, ".")
-			vcmap[vendor].Servers.appendList(v.GetStringSlice(search))
+			vcmap[vendor].Servers.appendList(Konf.Strings(search))
 		} else {
-			resolve := v.GetBool(fmt.Sprintf("%s.resolve_servers", vendor))
+			resolve := Konf.Bool(vendor + ".resolve_servers")
 			build_server_map(&vcmap[vendor].Servers, vendor, start, vcmap[vendor].Levels, resolve)
 		}
 	}
@@ -52,15 +50,14 @@ func LoadVendors() map[string]*VendorConfig {
  * data from Viper
  */
 func build_server_map(sm *ServerMap, vendor string, location []string, levels []string, resolve bool) {
-	v := viper.GetViper()
 	level_cnt := len(levels)
 	search := strings.Join(location, ".")
 
 	if level_cnt == 1 {
 		// key := location[len(location)-1]
-		for key, _ := range v.GetStringMap(search) {
+		for _, key := range Konf.MapKeys(search) {
 			server_search := fmt.Sprintf("%s.%s", search, key)
-			servers := v.GetStringSlice(server_search)
+			servers := Konf.Strings(server_search)
 			if resolve {
 				l := newServerMap(sm, key, vendor, true)
 				for _, fqdn := range servers {
@@ -90,7 +87,7 @@ func build_server_map(sm *ServerMap, vendor string, location []string, levels []
 		// pop off the next level
 		levels := levels[1:len(levels)]
 		// Iterate over our Config Viper map[string]inteface{}
-		for key, _ := range v.GetStringMap(search) {
+		for _, key := range Konf.MapKeys(search) {
 			loc := append(location, key)
 			new_map := newServerMap(sm, key, vendor, false)
 			// attach our new_map to ourself

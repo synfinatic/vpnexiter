@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
-	"github.com/spf13/viper"
+	"github.com/synfinatic/vpnexiter/vpnexiter"
 	"log"
 	"net/http"
 	"os/exec"
@@ -48,15 +48,14 @@ type SpeedtestRemote struct {
 }
 
 func run_speedtest(c echo.Context) (SpeedtestResults, error) {
-	v := viper.GetViper()
 	args := []string{"-f", "json"}
-	if v.IsSet("serverid") {
-		args = append(args, "-s", string(v.GetInt("serverid")))
-	} else if v.IsSet("host") {
-		args = append(args, "-o", string(v.GetInt("host")))
+	if vpnexiter.Konf.Exists("serverid") {
+		args = append(args, "-s", string(vpnexiter.Konf.Int("serverid")))
+	} else if vpnexiter.Konf.Exists("host") {
+		args = append(args, "-o", string(vpnexiter.Konf.Int("host")))
 	}
 
-	name := v.GetString("speedtest_cli")
+	name := vpnexiter.Konf.String("speedtest_cli")
 	cmd := exec.Command(name, args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -126,12 +125,11 @@ func run_speedtest(c echo.Context) (SpeedtestResults, error) {
 }
 
 func Speedtest(c echo.Context) error {
-	v := viper.GetViper()
 	var err error
 	var SR SpeedtestResults
 	// If we don't have a speedtest_url set, use the speedtest_cli
-	if !v.IsSet("speedtest_url") {
-		if !v.IsSet("speedtest_cli") {
+	if !vpnexiter.Konf.Exists("speedtest_url") {
+		if !vpnexiter.Konf.Exists("speedtest_cli") {
 			return c.Render(http.StatusOK, "error.html", "speedtest is not configured")
 		}
 		SR, err = run_speedtest(c)
@@ -142,7 +140,7 @@ func Speedtest(c echo.Context) error {
 		return c.Render(http.StatusOK, "speedtest.html", SR)
 	} else {
 		// we have a speedtest_url, so just embed that an iframe
-		url := v.GetString("speedtest_url")
+		url := vpnexiter.Konf.String("speedtest_url")
 		SR := SpeedtestRemote{SpeedtestUrl: url}
 		return c.Render(http.StatusOK, "speedtest.html", SR)
 	}

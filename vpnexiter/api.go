@@ -2,7 +2,6 @@ package vpnexiter
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"net"
@@ -54,8 +53,7 @@ func Server2ServerList(vendor string, path []string) (*ServerList, error) {
 }
 
 func Update(vendor string, ipaddr string) error {
-	v := viper.GetViper()
-	switch mode := v.GetString("router.mode"); mode {
+	switch mode := Konf.String("router.mode"); mode {
 	case "ssh":
 		log.Printf("Updating via ssh %s / %s", vendor, ipaddr)
 		return update_ssh(vendor, ipaddr)
@@ -72,8 +70,7 @@ func Update(vendor string, ipaddr string) error {
  * Returns the name of a tempfile containing the contents of the config file
  */
 func create_config(vendor string, ipaddr string) (string, error) {
-	v := viper.GetViper()
-	tmpl := v.GetString(vendor + ".config_template")
+	tmpl := Konf.String(vendor + ".config_template")
 	conf := ConfigTemplate{
 		VpnServer: ipaddr,
 	}

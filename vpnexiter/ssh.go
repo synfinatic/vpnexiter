@@ -5,7 +5,6 @@ import (
 	"fmt"
 	scp "github.com/bramvdbogaerde/go-scp"
 	"github.com/bramvdbogaerde/go-scp/auth"
-	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	"log"
 	"os"
@@ -17,9 +16,8 @@ import (
  * Updates the config on a remote system via SSH
  */
 func update_ssh(vendor string, ipaddr string) error {
-	v := viper.GetViper()
 
-	config_file := v.GetString("router.config_file")
+	config_file := Konf.String("router.config_file")
 
 	cfile, err := create_config(vendor, ipaddr)
 	if err != nil {
@@ -59,13 +57,12 @@ func update_ssh(vendor string, ipaddr string) error {
  * Builds a ssh.ClientConfig for a ssh connection
  */
 func ssh_config() (string, ssh.ClientConfig) {
-	v := viper.GetViper()
 	router := fmt.Sprintf("%s:%d",
-		v.GetString("router.host"),
-		v.GetInt("router.port"))
+		Konf.String("router.host"),
+		Konf.Int("router.port"))
 
-	username := v.GetString("router.user")
-	password := v.GetString("router.password")
+	username := Konf.String("router.user")
+	password := Konf.String("router.password")
 	clientConfig, _ := auth.PasswordKey(username, password, ssh.InsecureIgnoreHostKey())
 	return router, clientConfig
 }
@@ -95,21 +92,20 @@ func exec_ssh_command(conn ssh.Client, command string) (bytes.Buffer, error) {
  */
 func restart_ipsec_ssh(vendor string) error {
 	seconds := 5
-	v := viper.GetViper()
 	router, config := ssh_config()
 	conn, _ := ssh.Dial("tcp", router, &config)
 	defer conn.Close()
-	_, err := exec_ssh_command(*conn, v.GetString("router.stop_command"))
+	_, err := exec_ssh_command(*conn, Konf.String("router.stop_command"))
 	if err != nil {
 		return err
 	}
-	_, err = exec_ssh_command(*conn, v.GetString("router.start_command"))
+	_, err = exec_ssh_command(*conn, Konf.String("router.start_command"))
 	if err != nil {
 		return err
 	}
 	var vpn_up bool = false
 	for i := 0; i < seconds; i++ {
-		out, err := exec_ssh_command(*conn, v.GetString("router.status_command"))
+		out, err := exec_ssh_command(*conn, Konf.String("router.status_command"))
 		if err != nil {
 			return err
 		}

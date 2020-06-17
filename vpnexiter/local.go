@@ -3,7 +3,6 @@ package vpnexiter
 import (
 	"bytes"
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/exec"
@@ -15,13 +14,12 @@ import (
  * Updates the IPSec config on a local system
  */
 func update_local(vendor string, ipaddr string) error {
-	v := viper.GetViper()
 	cfile, err := create_config(vendor, ipaddr)
 	if err != nil {
 		return err
 	}
 
-	config_file := v.GetString("router.config_file")
+	config_file := Konf.String("router.config_file")
 	err = os.Rename(cfile, config_file)
 	if err != nil {
 		return err
@@ -59,18 +57,17 @@ func exec_local_command(command string) (bytes.Buffer, error) {
  */
 func RestartIpSecLocal(vendor string) error {
 	seconds := 5
-	v := viper.GetViper()
-	out, err := exec_local_command(v.GetString("router.stop_command"))
+	out, err := exec_local_command(Konf.String("router.stop_command"))
 	if err != nil {
 		return err
 	}
-	out, err = exec_local_command(v.GetString("router.start_command"))
+	out, err = exec_local_command(Konf.String("router.start_command"))
 	if err != nil {
 		return err
 	}
 	var vpn_up bool = false
 	for i := 0; i < seconds; i++ {
-		out, err = exec_local_command(v.GetString("router.status_command"))
+		out, err = exec_local_command(Konf.String("router.status_command"))
 		if err != nil {
 			return err
 		}

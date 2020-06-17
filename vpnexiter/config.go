@@ -2,10 +2,64 @@ package vpnexiter
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/confmap"
+	"github.com/knadh/koanf/providers/file"
 	"log"
+	"os"
 	"strings"
 )
+
+var Konf = koanf.New(".")
+
+/*
+ * Returns a slice of Koanf config files
+ */
+func configFiles() []string {
+	return []string{
+		"./config.yaml",
+		"/etc/vpnexiter/config.yaml",
+	}
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func LoadConfig() {
+	// Set Defaults
+	Konf.Load(confmap.Provider(map[string]interface{}{
+		"listen.http":  8000,
+		"listen.https": -1,
+		"router.mode":  "ssh",
+		"router.host":  "192.168.1.1",
+		"router.port":  22,
+		"router.user":  "admin",
+	}, "."), nil)
+
+	for _, fname := range configFiles() {
+		if fileExists(fname) {
+			f := file.Provider(fname)
+			if err := Konf.Load(f, yaml.Parser()); err != nil {
+				log.Fatal("error loading config: %v", err)
+			}
+		}
+	}
+	/* FIXME:
+	var vconf vpnexiter.Configurations
+
+	err := viper.Unmarshal(&vconf)
+	if err != nil {
+		fmt.Printf("Unable to decode into struct, %v", err)
+	}
+	*/
+
+}
 
 type Configurations struct {
 	listen    ListenConfigurations
@@ -34,81 +88,45 @@ type RouterConfigurations struct {
 	password string
 }
 
-func GetVendor(vendor string) (map[string]interface{}, error) {
-	v := viper.GetViper()
-	key := fmt.Sprintf("vendors.%s", vendor)
-	if v.IsSet(key) {
-		return v.GetStringMap(key), nil
-	} else {
-		return nil, fmt.Errorf("%s vendor is not defined", vendor)
-	}
-}
-
 func Levels(vendor string) []string {
 	var empty []string
-	v := viper.GetViper()
 	levels := fmt.Sprintf("%s.levels", vendor)
-	if v.IsSet(levels) {
-		return v.GetStringSlice(levels)
+	if Konf.Exists(levels) {
+		return Konf.Strings(levels)
 	} else {
 		return empty
 	}
 }
 
-func Servers(vendor string) (map[string]interface{}, error) {
-	v := viper.GetViper()
-	path := fmt.Sprintf("%s.servers", vendor)
-	if v.IsSet(path) {
-		return v.GetStringMap(path), nil
-	} else {
-		log.Printf("Servers: %s", vendor)
-		return nil, fmt.Errorf("invalid vendor: %s", vendor)
-	}
-}
-
 func GetServers(vendor string, path []string) ([]string, error) {
-	v := viper.GetViper()
 	fullpath, err := GetPath(vendor, path)
 	if err != nil {
 		log.Printf("GetServers: %s / %s", vendor, fullpath)
 		return nil, err
 	} else {
-		return v.GetStringSlice(fullpath), nil
+		return Konf.Strings(fullpath), nil
 	}
-}
-
-func FindLevel(vendor, string, level string) (int, error) {
-	l := Levels(vendor)
-	for i, n := range l {
-		if n == level {
-			return i, nil
-		}
-	}
-	log.Printf("FindLevel: %s / %s", vendor, level)
-	return -1, fmt.Errorf("Level %s doesn't exist in %s", level, vendor)
 }
 
 func GetPath(vendor string, path []string) (string, error) {
-	v := viper.GetViper()
 	fullpath := fmt.Sprintf("%s.servers", vendor)
 	if len(path) > 0 {
 		vars := strings.Join(path, ".")
 		fullpath = fmt.Sprintf("%s.%s", fullpath, vars)
 	}
-	if !v.IsSet(fullpath) {
+	if !Konf.Exists(fullpath) {
 		return "", fmt.Errorf("Invalid path: %s", fullpath)
 	}
 	return fullpath, nil
 }
 
 func GetPathKeys(vendor string, path []string) ([]string, error) {
-	v := viper.GetViper()
 	fullpath, err := GetPath(vendor, path)
 	if err != nil {
 		log.Printf("GetPathKeys: %s / %s", vendor, fullpath)
 		return nil, err
 	}
-	pdata := v.GetStringMap(fullpath)
+	pdata := Konf.StringMap(fullpath)
 	log.Printf("fullpath %s", fullpath)
 	keys := make([]string, 0, len(pdata))
 	for k, _ := range pdata {

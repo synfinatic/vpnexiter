@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/spf13/viper"
 	"github.com/synfinatic/vpnexiter/vpnexiter"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
@@ -54,9 +53,8 @@ func Status(c echo.Context) error {
 }
 
 func BasicAuthHandler(username string, password string, c echo.Context) (bool, error) {
-	v := viper.GetViper()
-	conf_user := v.GetString("listen.username")
-	conf_pass := v.GetString("listen.password")
+	conf_user := vpnexiter.Konf.String("listen.username")
+	conf_pass := vpnexiter.Konf.String("listen.password")
 	if subtle.ConstantTimeCompare([]byte(username), []byte(conf_user)) == 1 &&
 		bcrypt.CompareHashAndPassword([]byte(conf_pass), []byte(password)) == nil {
 		return true, nil
@@ -85,36 +83,12 @@ func float64_to_int(val float64) int {
 }
 
 func main() {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/vpnexiter")
-	viper.AutomaticEnv()
-
-	// Set Defaults
-	viper.SetDefault("listen.http", 8000)
-	viper.SetDefault("listen.https", -1)
-	viper.SetDefault("router.mode", "ssh")
-	viper.SetDefault("router.host", "192.168.1.1")
-	viper.SetDefault("router.port", 22)
-	viper.SetDefault("router.user", "admin")
-
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading config file: %s", err)
-	}
-
-	var vconf vpnexiter.Configurations
-
-	err := viper.Unmarshal(&vconf)
-	if err != nil {
-		fmt.Printf("Unable to decode into struct, %v", err)
-	}
-
 	e := echo.New()
 	e.Use(middleware.Logger()) // debug logging: https://echo.labstack.com/middleware/logger
+	vpnexiter.LoadConfig()
 
 	// Enable basic auth?
-	if viper.IsSet("listen.username") && viper.IsSet("listen.password") {
+	if vpnexiter.Konf.Exists("listen.username") && vpnexiter.Konf.Exists("listen.password") {
 		e.Use(middleware.BasicAuth(BasicAuthHandler))
 	}
 

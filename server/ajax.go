@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
-	"github.com/spf13/viper"
 	"github.com/synfinatic/vpnexiter/vpnexiter"
 	"log"
 	"net/http"
@@ -21,8 +20,7 @@ import (
  * Return a list of VPN Vendors
  */
 func vendors(c echo.Context) error {
-	v := viper.GetViper()
-	venlist := v.GetStringSlice("vendors")
+	venlist := vpnexiter.Konf.Strings("vendors")
 	return c.JSONPretty(http.StatusOK, venlist, " ")
 }
 
@@ -74,9 +72,7 @@ func level(c echo.Context) error {
  * Grab a list of "local" speedtest servers
  */
 func speedtest_servers(c echo.Context) error {
-	v := viper.GetViper()
-
-	e := exec.Command(v.GetString("speedtest"), "--servers", "-f", "json-pretty")
+	e := exec.Command(vpnexiter.Konf.String("speedtest"), "--servers", "-f", "json-pretty")
 	output, err := e.Output()
 	if err != nil {
 		log.Printf("error at output")
@@ -92,7 +88,6 @@ func speedtest_servers(c echo.Context) error {
  * Optionally: Pick the speedtest.net serverid to egress from
  */
 func speedtest(c echo.Context) error {
-	v := viper.GetViper()
 	// ipaddr := c.Param("ipaddr")
 	serverid := c.Param("serverid")
 
@@ -103,7 +98,7 @@ func speedtest(c echo.Context) error {
 	} else {
 		log.Printf("Letting speedtest.net pick our server...")
 	}
-	e := exec.Command(v.GetString("speedtest"), args...)
+	e := exec.Command(vpnexiter.Konf.String("speedtest"), args...)
 
 	output, err := e.Output()
 	if err != nil {
@@ -174,14 +169,13 @@ func exits(c echo.Context) error {
 
 func _exits(c echo.Context) (interface{}, int, error) {
 	vendor := c.Param("vendor")
-	v := viper.GetViper()
 	levels := vpnexiter.Levels(vendor)
 	vpath := vendor + ".servers"
 	lvls := len(levels)
 	switch lvls {
 	case 0:
 		log.Printf("getting servers for %s", vendor)
-		data := v.GetStringSlice(vpath)
+		data := vpnexiter.Konf.Strings(vpath)
 		return data, 0, nil
 	case 1, 2, 3, 4, 5:
 		data := walk_levels(vpath, lvls, 1)
@@ -196,11 +190,11 @@ func _exits(c echo.Context) (interface{}, int, error) {
  */
 
 func walk_levels(path string, levels int, depth int) interface{} {
-	v := viper.GetViper()
 	if levels <= depth {
 		// this level is a map[string]interface
-		us := v.GetStringMap(path)
-		for key, _ := range us {
+		us := make(map[string]interface{}, 0)
+		keys := vpnexiter.Konf.MapKeys(path)
+		for _, key := range keys {
 			newpath := path + "." + key
 			fmt.Printf("going deeper: %s\n", newpath)
 			us[key] = walk_levels(newpath, levels, depth+1)
@@ -208,7 +202,7 @@ func walk_levels(path string, levels int, depth int) interface{} {
 		return us
 	} else {
 		// this level is the final level and a map[string][]string
-		us := v.GetStringMapStringSlice(path)
+		us := vpnexiter.Konf.StringsMap(path)
 		return us
 	}
 }
