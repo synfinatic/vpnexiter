@@ -46,6 +46,41 @@ func LoadVendors() map[string]*VendorConfig {
 }
 
 /*
+ * helper for build_server_map().  Was intended to execute as a go-routine to
+ * speed up DNS queries, but turns out that doesn't work on OSX because
+ * net.LookupHost() is just a proxy for gethostbyname() which is not re-entrant.
+ *
+ * More info: https://golang.org/pkg/net/#hdr-Name_Resolution
+ */
+func (sm *ServerMap) load_servers(vendor string, search string, key string, resolve bool) {
+	server_search := fmt.Sprintf("%s.%s", search, key)
+	servers := Konf.Strings(server_search)
+	if resolve {
+		l := newServerMap(sm, key, vendor, true)
+		for _, fqdn := range servers {
+			svrs := []string{}
+			addrs, err := net.LookupHost(fqdn)
+			if err != nil {
+				log.Printf("Error resolving %s: %s", fqdn, err.Error())
+				svrs = append(svrs, fqdn)
+			} else {
+				svrs = append(svrs, addrs...)
+			}
+			l.addList(fqdn, svrs)
+		}
+		err := sm.addMap(key, l)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		err := sm.addList(key, servers)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+/*
  * Recursive function to populate the ServerMap with the config
  * data from Viper
  */
@@ -54,34 +89,8 @@ func build_server_map(sm *ServerMap, vendor string, location []string, levels []
 	search := strings.Join(location, ".")
 
 	if level_cnt == 1 {
-		// key := location[len(location)-1]
 		for _, key := range Konf.MapKeys(search) {
-			server_search := fmt.Sprintf("%s.%s", search, key)
-			servers := Konf.Strings(server_search)
-			if resolve {
-				l := newServerMap(sm, key, vendor, true)
-				for _, fqdn := range servers {
-					svrs := []string{}
-					addrs, err := net.LookupHost(fqdn)
-					if err != nil {
-						log.Printf("Error resolving %s: %s", fqdn, err.Error())
-						svrs = append(svrs, fqdn)
-					} else {
-						svrs = append(svrs, addrs...)
-					}
-					l.addList(fqdn, svrs)
-				}
-				err := sm.addMap(key, l)
-				// err := sm.addList(key, svrs)
-				if err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				err := sm.addList(key, servers)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
+			sm.load_servers(vendor, search, key, resolve)
 		}
 	} else {
 		// pop off the next level

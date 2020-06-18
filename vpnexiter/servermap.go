@@ -8,19 +8,32 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 )
 
+/*
+ * This data struct represents a node in our tree of VPN servers.
+ * The mutex is there incase we can ever get multithreaded DNS queries
+ * to work.
+ *
+ * LinkKeys is used to inform GenHTML() if we want the keys of the hash
+ * to be hyperlinks (normally, just the values in a list are).
+ *
+ * Everything else should be pretty self explainatory!
+ */
 type ServerMap struct {
+	mux      sync.Mutex // not really needed!
+	Vendor   string
+	LinkKeys bool
 	Parent   *ServerMap
 	Name     string
 	List     []string
 	Map      map[string]ServerMap
-	Vendor   string
-	LinkKeys bool
 }
 
 func newServerMap(parent *ServerMap, name string, vendor string, link_keys bool) *ServerMap {
 	return &ServerMap{
+		mux:      sync.Mutex{},
 		Parent:   parent,
 		Name:     name,
 		Vendor:   vendor,
@@ -66,6 +79,9 @@ func (sm *ServerMap) addList(key string, servers []string) error {
 		return fmt.Errorf("Can not add a key to a List")
 	}
 
+	// someday, maybe we'll even be able to use this mutex
+	sm.mux.Lock()
+	defer sm.mux.Unlock()
 	sm.Map[key] = ServerMap{List: servers}
 	return nil
 }
@@ -75,6 +91,8 @@ func (sm *ServerMap) appendList(servers []string) error {
 		return fmt.Errorf("Can't append a List since we are a Map")
 	}
 
+	sm.mux.Lock()
+	defer sm.mux.Unlock()
 	sm.List = append(sm.List, servers...)
 	return nil
 }
@@ -83,6 +101,9 @@ func (sm *ServerMap) addMap(key string, mdata *ServerMap) error {
 	if sm.isList() {
 		return fmt.Errorf("Can't add a Map to a List")
 	}
+
+	sm.mux.Lock()
+	defer sm.mux.Unlock()
 	sm.Map[key] = *mdata
 	return nil
 }
