@@ -261,10 +261,15 @@ func (sm ServerMap) GenHTML(baseurl string, vendor string) (string, error) {
 
 	if sm.isList() {
 		l, _ := sm.getList()
-		err := list_tmpl.Execute(&html, l)
-		if err != nil {
-			log.Fatal(err.Error())
-			return "", err
+		if len(l) > 1 {
+			err := list_tmpl.Execute(&html, l)
+			if err != nil {
+				log.Fatal(err.Error())
+				return "", err
+			}
+		} else {
+			x := l[0]
+			return fmt.Sprintf(`<a href="%s/%s/%s">%s</a>`, baseurl, vendor, x, x), nil
 		}
 	} else if sm.isMap() {
 		m, _ := sm.getMap()

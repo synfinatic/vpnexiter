@@ -59,12 +59,16 @@ func (sm *ServerMap) load_servers(vendor string, search string, key string, reso
 		l := newServerMap(sm, key, vendor, true)
 		for _, fqdn := range servers {
 			svrs := []string{}
-			addrs, err := net.LookupHost(fqdn)
-			if err != nil {
-				log.Printf("Error resolving %s: %s", fqdn, err.Error())
-				svrs = append(svrs, fqdn)
+			if net.ParseIP(fqdn) == nil {
+				addrs, err := net.LookupHost(fqdn)
+				if err != nil {
+					log.Printf("Error resolving %s: %s", fqdn, err.Error())
+					continue
+				} else {
+					svrs = append(svrs, addrs...)
+				}
 			} else {
-				svrs = append(svrs, addrs...)
+				svrs = append(svrs, fqdn) // just an IP
 			}
 			l.addList(fqdn, svrs)
 		}
