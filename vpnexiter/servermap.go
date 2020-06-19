@@ -48,64 +48,39 @@ func newServerMap(parent *ServerMap, name string, vendor string, link_keys bool)
  * they are neither a Map or a List.  Once you call addMap, addList
  * or appendList, then it becomes that type
  */
-func (sm ServerMap) isList() bool {
+func (sm ServerMap) hasList() bool {
 	return len(sm.List) > 0
 }
 
-func (sm ServerMap) isMap() bool {
+func (sm ServerMap) hasMap() bool {
 	return len(sm.Map) > 0
 }
 
-func (sm ServerMap) getList() ([]string, error) {
-	if sm.isList() {
-		return sm.List, nil
-	} else if sm.isMap() {
-		return nil, fmt.Errorf("ServerMap is a Map, not List")
-	}
-	return nil, fmt.Errorf("Can't getList() because ServerMap is undefined")
+func (sm ServerMap) getList() []string {
+	return sm.List
 }
 
-func (sm *ServerMap) getMap() (map[string]ServerMap, error) {
-	if sm.isList() {
-		return nil, fmt.Errorf("ServerMap is a List")
-	} else if sm.isMap() {
-		return sm.Map, nil
-	}
-	return nil, fmt.Errorf("Can't getMap() because ServerMap is undefined")
+func (sm *ServerMap) getMap() map[string]ServerMap {
+	return sm.Map
 }
 
-func (sm *ServerMap) addList(key string, servers []string) error {
-	if sm.isList() {
-		return fmt.Errorf("Can not add a key to a List")
-	}
-
+func (sm *ServerMap) addList(key string, servers []string) {
 	// someday, maybe we'll even be able to use this mutex
 	sm.mux.Lock()
 	defer sm.mux.Unlock()
 	sm.Map[key] = ServerMap{List: servers}
-	return nil
 }
 
-func (sm *ServerMap) appendList(servers []string) error {
-	if sm.isMap() {
-		return fmt.Errorf("Can't append a List since we are a Map")
-	}
-
+func (sm *ServerMap) appendList(servers []string) {
 	sm.mux.Lock()
 	defer sm.mux.Unlock()
 	sm.List = append(sm.List, servers...)
-	return nil
 }
 
-func (sm *ServerMap) addMap(key string, mdata *ServerMap) error {
-	if sm.isList() {
-		return fmt.Errorf("Can't add a Map to a List")
-	}
-
+func (sm *ServerMap) addMap(key string, mdata *ServerMap) {
 	sm.mux.Lock()
 	defer sm.mux.Unlock()
 	sm.Map[key] = *mdata
-	return nil
 }
 
 /*
@@ -136,19 +111,18 @@ func walkServerMap(sm ServerMap) {
 
 // helper function for walkServerMap()
 func _walkServerMap(sm ServerMap, depth int) {
-	if sm.isList() {
-		l, _ := sm.getList()
+	if sm.hasList() {
+		l := sm.getList()
 		for _, server := range l {
 			fmt.Printf("%s- %s\n", strings.Repeat("\t", depth), server)
 		}
-	} else if sm.isMap() {
-		m, _ := sm.getMap()
+	}
+	if sm.hasMap() {
+		m := sm.getMap()
 		for key, sm := range m {
 			fmt.Printf("%s%s:\n", strings.Repeat("\t", depth), key)
 			_walkServerMap(sm, depth+1)
 		}
-	} else {
-		log.Printf("Undefined ServerMap: %v at depth %d", sm, depth)
 	}
 }
 
@@ -172,16 +146,13 @@ func insertServers(head *ServerMap, location []string, servers []string) error {
 		// recurse
 		key := location[0]
 		loc := location[1:len(location)]
-		if head.isMap() {
-			m, _ := head.getMap()
+		if head.hasMap() {
+			m := head.getMap()
 			x := m[key]
 			insertServers(&x, loc, servers)
 		} else {
 			m := &ServerMap{}
-			err := head.addMap(key, m)
-			if err != nil {
-				return err
-			}
+			head.addMap(key, m)
 			insertServers(m, loc, servers)
 		}
 	}
@@ -198,13 +169,13 @@ func (sm ServerMap) getServers(location []string) ([]string, error) {
 		location = location[2:len(location)]
 	}
 
-	if sm.isList() {
-		l, _ := sm.getList()
+	if sm.hasList() {
+		l := sm.getList()
 		return l, nil
-	} else if sm.isMap() {
+	} else if sm.hasMap() {
 		next := location[0]
 		loc := location[1:len(location)]
-		s, _ := sm.getMap()
+		s := sm.getMap()
 		return s[next].getServers(loc)
 	}
 
@@ -225,10 +196,6 @@ func (sm ServerMap) GenHTMLTemplate() (template.HTML, error) {
 }
 
 func (sm ServerMap) mapKeyToLabel(key string) (string, error) {
-	if sm.isList() {
-		return "", fmt.Errorf("Can't call getKey() on a List")
-	}
-
 	if !sm.LinkKeys || len(sm.Vendor) == 0 {
 		return key, nil
 	} else {
@@ -259,20 +226,22 @@ func (sm ServerMap) GenHTML(baseurl string, vendor string) (string, error) {
 			baseurl, vendor),
 	)
 
-	if sm.isList() {
-		l, _ := sm.getList()
+	if sm.hasList() {
+		l := sm.getList()
 		if len(l) > 1 {
 			err := list_tmpl.Execute(&html, l)
 			if err != nil {
 				log.Fatal(err.Error())
-				return "", err
 			}
 		} else {
 			x := l[0]
-			return fmt.Sprintf(`<a href="%s/%s/%s">%s</a>`, baseurl, vendor, x, x), nil
+			buf := fmt.Sprintf(`<a href="%s/%s/%s">%s</a>`, baseurl, vendor, x, x)
+			html.Write([]byte(buf))
 		}
-	} else if sm.isMap() {
-		m, _ := sm.getMap()
+	}
+
+	if sm.hasMap() {
+		m := sm.getMap()
 		mapkeys := []string{}
 		for key, _ := range m {
 			mapkeys = append(mapkeys, key)

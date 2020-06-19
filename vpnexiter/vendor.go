@@ -34,12 +34,12 @@ func LoadVendors() map[string]*VendorConfig {
 		}
 
 		start := []string{vendor, "servers"}
+		search := strings.Join(start, ".")
+		resolve := Konf.Bool(vendor + ".resolve_servers")
 		if len(vcmap[vendor].Levels) == 0 {
-			search := strings.Join(start, ".")
-			vcmap[vendor].Servers.appendList(Konf.Strings(search))
+			vcmap[vendor].Servers.load_servers(search, "", resolve)
 		} else {
-			resolve := Konf.Bool(vendor + ".resolve_servers")
-			build_server_map(&vcmap[vendor].Servers, vendor, start, vcmap[vendor].Levels, resolve)
+			build_server_map(&vcmap[vendor].Servers, start, vcmap[vendor].Levels, resolve)
 		}
 	}
 	return vcmap
@@ -52,14 +52,23 @@ func LoadVendors() map[string]*VendorConfig {
  *
  * More info: https://golang.org/pkg/net/#hdr-Name_Resolution
  */
-func (sm *ServerMap) load_servers(vendor string, search string, key string, resolve bool) {
-	server_search := fmt.Sprintf("%s.%s", search, key)
+func (sm *ServerMap) load_servers(search string, key string, resolve bool) {
+	server_search := search
+
+	/*
+	 * if key is empty, then we don't want to add another level to sm, but rather
+	 * we want to add items directly to sm
+	 */
+	if len(key) > 0 {
+		server_search = fmt.Sprintf("%s.%s", search, key)
+	}
 	servers := Konf.Strings(server_search)
 	if resolve {
-		l := newServerMap(sm, key, vendor, true)
+		l := newServerMap(sm, key, sm.Vendor, true)
 		for _, fqdn := range servers {
 			svrs := []string{}
 			if net.ParseIP(fqdn) == nil {
+				// is a FQDN, so should be fqdn => [ip1, ip2]
 				addrs, err := net.LookupHost(fqdn)
 				if err != nil {
 					log.Printf("Error resolving %s: %s", fqdn, err.Error())
@@ -68,18 +77,31 @@ func (sm *ServerMap) load_servers(vendor string, search string, key string, reso
 					svrs = append(svrs, addrs...)
 				}
 			} else {
-				svrs = append(svrs, fqdn) // just an IP
+				// is an IP address so should be => [ip1, ip2]
+				ip := []string{fqdn}
+				l.appendList(ip)
 			}
-			l.addList(fqdn, svrs)
+			// if we have one or more servers, add a level
+			if len(svrs) > 0 {
+				l.addList(fqdn, svrs)
+			}
 		}
-		err := sm.addMap(key, l)
-		if err != nil {
-			log.Fatal(err)
+		// if we have a key add a level to sm
+		if len(key) > 0 {
+			sm.addMap(key, l)
+		} else {
+			// no key?  move the elments of l into sm
+			sm.appendList(l.getList())
+			for k, v := range l.getMap() {
+				sm.addMap(k, &v)
+			}
 		}
 	} else {
-		err := sm.addList(key, servers)
-		if err != nil {
-			log.Fatal(err)
+		// DNS resolution is off
+		if len(key) > 0 {
+			sm.addList(key, servers)
+		} else {
+			sm.appendList(servers)
 		}
 	}
 }
@@ -88,13 +110,13 @@ func (sm *ServerMap) load_servers(vendor string, search string, key string, reso
  * Recursive function to populate the ServerMap with the config
  * data from Viper
  */
-func build_server_map(sm *ServerMap, vendor string, location []string, levels []string, resolve bool) {
+func build_server_map(sm *ServerMap, location []string, levels []string, resolve bool) {
 	level_cnt := len(levels)
 	search := strings.Join(location, ".")
 
 	if level_cnt == 1 {
 		for _, key := range Konf.MapKeys(search) {
-			sm.load_servers(vendor, search, key, resolve)
+			sm.load_servers(search, key, resolve)
 		}
 	} else {
 		// pop off the next level
@@ -102,11 +124,11 @@ func build_server_map(sm *ServerMap, vendor string, location []string, levels []
 		// Iterate over our Config Viper map[string]inteface{}
 		for _, key := range Konf.MapKeys(search) {
 			loc := append(location, key)
-			new_map := newServerMap(sm, key, vendor, false)
+			new_map := newServerMap(sm, key, sm.Vendor, false)
 			// attach our new_map to ourself
 			sm.addMap(key, new_map)
 			// recurse
-			build_server_map(new_map, vendor, loc, levels, resolve)
+			build_server_map(new_map, loc, levels, resolve)
 		}
 	}
 }
