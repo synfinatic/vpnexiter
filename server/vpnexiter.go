@@ -40,6 +40,18 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
+func Index(c echo.Context) error {
+	type SpeedTestTypes struct {
+		HasLocalSpeedtest   bool
+		HasEmbededSpeedtest bool
+	}
+	stt := SpeedTestTypes{
+		HasLocalSpeedtest:   len(vpnexiter.Konf.String("speedtest_cli")) > 0,
+		HasEmbededSpeedtest: len(vpnexiter.Konf.String("speedtest_url")) > 0,
+	}
+	return c.Render(http.StatusOK, "index.html", stt)
+}
+
 func Version(c echo.Context) error {
 	type Version struct {
 		Version string
@@ -109,11 +121,12 @@ func main() {
 		templates: template.Must(template.New("main").Funcs(funcMap).ParseGlob("templates/*.html")),
 	}
 	e.Renderer = t
+	e.GET("/", Index)
 	e.GET("/version", Version)
 	e.GET("/status", Status)
 	e.GET("/select_exit", SelectExit)
 	e.GET("/select_exit/:vendor/:exit", SelectExit)
-	e.GET("/speedtest.html", Speedtest)
+	e.GET("/speedtest/:mode", Speedtest)
 
 	/*
 	 * AJAX Calls

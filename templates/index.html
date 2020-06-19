@@ -1,3 +1,4 @@
+{{define "index.html"}}
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 
 <html>
@@ -59,7 +60,12 @@
             <ul> <!-- class="nav_links"> -->
                 <li><a href="/status">Status</a></li>
                 <li><a href="/select_exit">Select Exit</a></li>
-                <li><a href="/speedtest.html">Speed Test</a></li>
+                {{ if .HasLocalSpeedtest }}
+                <li><a href="/speedtest/server">Server Speed Test</a></li>
+                {{end}}
+                {{ if .HasEmbededSpeedtest }}
+                <li><a href="/speedtest/embeded">Browser Speed Test</a></li>
+                {{end}}
                 <li><a href="/version">Version</a></li>
             </ul>
         </header>
@@ -72,8 +78,11 @@
         <div id="ui-id-6" class="content"></div>
         <div id="ui-id-7" class="content"></div>
         <div id="ui-id-8" class="content"></div>
+        <div id="ui-id-9" class="content"></div>
+        <div id="ui-id-10" class="content"></div>
     </div>
 
 </body>
 
 </html>
+{{end}}
