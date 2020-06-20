@@ -5,27 +5,48 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/synfinatic/vpnexiter/vpn"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/grignaak/tribool.v1"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
 
 type GlobalState struct {
-	Connected     bool
+	Connected     tribool.Tribool
 	Connected_str string
 	Vendor        string
-	Exit_node     string
-	Exit_path     []string
+	Exit          string
+	ExitPath      []string
+	StatusOutput  string
+	VPN           *vpn.VpnServer
 }
 
 var GS = GlobalState{
-	Connected:     false,
+	Connected:     tribool.Maybe,
 	Connected_str: "Down",
-	Vendor:        "",
-	Exit_node:     "",
-	Exit_path:     []string{},
+	Vendor:        "Unknown",
+	Exit:          "Unselected",
+	ExitPath:      []string{},
+	StatusOutput:  "",
+	VPN:           nil,
+}
+
+func (gs *GlobalState) SetState(state tribool.Tribool) {
+	log.Printf("reporting the VPN connection status is: %s\n", state)
+	if state == tribool.True {
+		gs.Connected = tribool.True
+		gs.Connected_str = "Up"
+	} else if state == tribool.False {
+		gs.Connected = tribool.False
+		gs.Connected_str = "Down"
+	} else {
+		gs.Connected = tribool.Maybe
+		gs.Connected_str = "Unknown State"
+	}
 }
 
 /*
@@ -60,7 +81,42 @@ func Version(c echo.Context) error {
 }
 
 func Status(c echo.Context) error {
+	forced := c.Param("forced")
+	if GS.Connected == tribool.Maybe || len(forced) > 0 {
+		log.Printf("Checking status of VPN\n")
+		trib, err := GS.VPN.IsUp()
+		GS.SetState(trib)
+		if err != nil {
+			log.Printf("Error getting IsVpnUp()")
+			return c.Render(http.StatusOK, "error.html", err.Error())
+		}
+		buf, err := GS.VPN.Status()
+		if err != nil {
+			log.Printf("Error getting VpnStatus()")
+			return c.Render(http.StatusOK, "error.html", err.Error())
+		}
+		GS.StatusOutput = buf.String()
+	}
 	return c.Render(http.StatusOK, "status.html", GS)
+}
+
+func SelectExit(c echo.Context) error {
+	exit := c.Param("exit")
+	vendor := c.Param("vendor")
+	if exit == "" {
+		vendors := LoadVendors()
+		return c.Render(http.StatusOK, "select_exit.html", vendors)
+	} else {
+		err := GS.VPN.UpdateConfig(vendor, exit)
+		if err != nil {
+			return c.Render(http.StatusOK, "error.html", err.Error())
+		}
+		_, err = GS.VPN.Restart()
+		if err != nil {
+			return c.Render(http.StatusOK, "error.html", err.Error())
+		}
+		return c.Render(http.StatusOK, "error.html", "VPN restarted")
+	}
 }
 
 func BasicAuthHandler(username string, password string, c echo.Context) (bool, error) {
@@ -103,6 +159,8 @@ func main() {
 		e.Use(middleware.BasicAuth(BasicAuthHandler))
 	}
 
+	GS.VPN = vpn.NewVpn(Konf)
+
 	// serve static content
 	e.Static("/static", "static")
 	e.File("/", "static/index.html")
@@ -123,9 +181,16 @@ func main() {
 	e.GET("/", Index)
 	e.GET("/version", Version)
 	e.GET("/status", Status)
+	e.GET("/status/:forced", Status)
 	e.GET("/select_exit", SelectExit)
 	e.GET("/select_exit/:vendor/:exit", SelectExit)
+
+	// Lots of speed test stuff
 	e.GET("/speedtest/:mode", Speedtest)
+	e.GET("/speedtest/", speedtest)
+	e.GET("/speedtest/host/:host", speedtest)
+	e.GET("/speedtest/id/:serverid", speedtest)
+	e.GET("/speedtest/servers", speedtest_servers)
 
 	/*
 	 * AJAX Calls
@@ -156,10 +221,6 @@ func main() {
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3", servers)
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4", servers)
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4/:l5", servers)
-	e.GET("/speedtest/", speedtest)
-	e.GET("/speedtest/host/:host", speedtest)
-	e.GET("/speedtest/id/:serverid", speedtest)
-	e.GET("/speedtest/servers", speedtest_servers)
-	e.GET("/update/:vendor/:ipaddr", update)
-	e.Logger.Fatal(e.Start(":5000"))
+	listen := fmt.Sprintf("%s:%d", Konf.String("listen.address"), Konf.Int("listen.http"))
+	e.Logger.Fatal(e.Start(listen))
 }

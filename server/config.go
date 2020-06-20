@@ -34,12 +34,13 @@ func fileExists(filename string) bool {
 func LoadConfig() {
 	// Set Defaults
 	Konf.Load(confmap.Provider(map[string]interface{}{
-		"listen.http":  8000,
-		"listen.https": -1,
-		"router.mode":  "ssh",
-		"router.host":  "192.168.1.1",
-		"router.port":  22,
-		"router.user":  "admin",
+		"listen.address": "0.0.0.0",
+		"listen.http":    8000,
+		"listen.https":   -1,
+		"router.mode":    "ssh",
+		"router.host":    "192.168.1.1",
+		"router.port":    22,
+		"router.user":    "admin",
 	}, "."), nil)
 
 	for _, fname := range configFiles() {

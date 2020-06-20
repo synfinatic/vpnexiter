@@ -14,8 +14,8 @@ type SpeedtestResults struct {
 	SpeedtestUrl string // yes, this need to be here ???
 	// GlobalState values
 	Vendor        string
-	Exit_node     string
-	Exit_path     []string
+	Exit          string
+	ExitPath      []string
 	Connected_str string
 	// Speedtest values
 	Type               string
@@ -93,8 +93,8 @@ func run_speedtest(c echo.Context) (SpeedtestResults, error) {
 	SR := SpeedtestResults{
 		SpeedtestUrl:       "",
 		Vendor:             GS.Vendor,
-		Exit_node:          GS.Exit_node,
-		Exit_path:          GS.Exit_path,
+		Exit:               GS.Exit,
+		ExitPath:           GS.ExitPath,
 		Connected_str:      GS.Connected_str,
 		Type:               jdata["type"].(string),
 		Timestamp:          jdata["timestamp"].(string),

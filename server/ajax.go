@@ -109,19 +109,6 @@ func speedtest(c echo.Context) error {
 }
 
 /*
- * Change egress to the provided vendor/VPN gateway
- */
-func update(c echo.Context) error {
-	vendor := c.Param("vendor")
-	ipaddr := c.Param("ipaddr")
-	err := Update(vendor, ipaddr)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
-	}
-	return c.JSONPretty(http.StatusOK, "OK", " ")
-}
-
-/*
  * Returns the server(s) for the given vendor and level
  */
 func servers(c echo.Context) error {
@@ -203,16 +190,5 @@ func walk_levels(path string, levels int, depth int) interface{} {
 		// this level is the final level and a map[string][]string
 		us := Konf.StringsMap(path)
 		return us
-	}
-}
-
-func SelectExit(c echo.Context) error {
-	exit := c.Param("exit")
-	if exit == "" {
-		vendors := LoadVendors()
-		return c.Render(http.StatusOK, "select_exit.html", vendors)
-	} else {
-		// FIXME: actually do something useful here
-		return Version(c)
 	}
 }

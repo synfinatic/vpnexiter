@@ -1,18 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"regexp"
-	"text/template"
 )
-
-// Everything that belongs in the config template needs to be here
-type ConfigTemplate struct {
-	VpnServer string
-}
 
 type ServerList struct {
 	Name string
@@ -50,44 +42,4 @@ func Server2ServerList(vendor string, path []string) (*ServerList, error) {
 		slist.IPs[s] = ips
 	}
 	return &slist, nil
-}
-
-func Update(vendor string, ipaddr string) error {
-	switch mode := Konf.String("router.mode"); mode {
-	case "ssh":
-		log.Printf("Updating via ssh %s / %s", vendor, ipaddr)
-		return update_ssh(vendor, ipaddr)
-	case "local":
-		log.Printf("Updating via local %s / %s", vendor, ipaddr)
-		return update_local(vendor, ipaddr)
-	default:
-		return fmt.Errorf("Unsupported mode: %s", mode)
-	}
-}
-
-/*
- * Helper function to create the IPSec config for a given vendor
- * Returns the name of a tempfile containing the contents of the config file
- */
-func create_config(vendor string, ipaddr string) (string, error) {
-	tmpl := Konf.String(vendor + ".config_template")
-	conf := ConfigTemplate{
-		VpnServer: ipaddr,
-	}
-	tfile, err := template.ParseFiles(tmpl)
-	if err != nil {
-		return "", err
-	}
-	out, err := ioutil.TempFile("", "vpnexiter")
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	err = tfile.Execute(out, conf)
-	if err != nil {
-		return "", err
-	}
-	log.Printf("Success generating temporary config file: %s", out.Name())
-	return out.Name(), nil
 }

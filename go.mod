@@ -9,4 +9,5 @@ require (
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/echo/v4 v4.1.16
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
+	gopkg.in/grignaak/tribool.v1 v1.0.0-20150312065122-d6bb19d816df
 )
