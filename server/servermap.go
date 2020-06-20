@@ -1,4 +1,4 @@
-package vpnexiter
+package main
 
 import (
 	"bytes"

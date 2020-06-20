@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/synfinatic/vpnexiter/vpnexiter"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"io"
@@ -46,8 +45,8 @@ func Index(c echo.Context) error {
 		HasEmbededSpeedtest bool
 	}
 	stt := SpeedTestTypes{
-		HasLocalSpeedtest:   len(vpnexiter.Konf.String("speedtest_cli")) > 0,
-		HasEmbededSpeedtest: len(vpnexiter.Konf.String("speedtest_url")) > 0,
+		HasLocalSpeedtest:   len(Konf.String("speedtest_cli")) > 0,
+		HasEmbededSpeedtest: len(Konf.String("speedtest_url")) > 0,
 	}
 	return c.Render(http.StatusOK, "index.html", stt)
 }
@@ -65,8 +64,8 @@ func Status(c echo.Context) error {
 }
 
 func BasicAuthHandler(username string, password string, c echo.Context) (bool, error) {
-	conf_user := vpnexiter.Konf.String("listen.username")
-	conf_pass := vpnexiter.Konf.String("listen.password")
+	conf_user := Konf.String("listen.username")
+	conf_pass := Konf.String("listen.password")
 	if subtle.ConstantTimeCompare([]byte(username), []byte(conf_user)) == 1 &&
 		bcrypt.CompareHashAndPassword([]byte(conf_pass), []byte(password)) == nil {
 		return true, nil
@@ -97,10 +96,10 @@ func float64_to_int(val float64) int {
 func main() {
 	e := echo.New()
 	e.Use(middleware.Logger()) // debug logging: https://echo.labstack.com/middleware/logger
-	vpnexiter.LoadConfig()
+	LoadConfig()
 
 	// Enable basic auth?
-	if vpnexiter.Konf.Exists("listen.username") && vpnexiter.Konf.Exists("listen.password") {
+	if Konf.Exists("listen.username") && Konf.Exists("listen.password") {
 		e.Use(middleware.BasicAuth(BasicAuthHandler))
 	}
 

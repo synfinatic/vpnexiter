@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
-	"github.com/synfinatic/vpnexiter/vpnexiter"
 	"log"
 	"net/http"
 	"os/exec"
@@ -49,13 +48,13 @@ type SpeedtestRemote struct {
 
 func run_speedtest(c echo.Context) (SpeedtestResults, error) {
 	args := []string{"-f", "json"}
-	if vpnexiter.Konf.Exists("serverid") {
-		args = append(args, "-s", string(vpnexiter.Konf.Int("serverid")))
-	} else if vpnexiter.Konf.Exists("host") {
-		args = append(args, "-o", string(vpnexiter.Konf.Int("host")))
+	if Konf.Exists("serverid") {
+		args = append(args, "-s", string(Konf.Int("serverid")))
+	} else if Konf.Exists("host") {
+		args = append(args, "-o", string(Konf.Int("host")))
 	}
 
-	name := vpnexiter.Konf.String("speedtest_cli")
+	name := Konf.String("speedtest_cli")
 	cmd := exec.Command(name, args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -128,14 +127,14 @@ func Speedtest(c echo.Context) error {
 	mode := c.Param("mode")
 	// If we don't have a speedtest_url set, use the speedtest_cli
 	if mode == "embeded" {
-		if !vpnexiter.Konf.Exists("speedtest_url") {
+		if !Konf.Exists("speedtest_url") {
 			return c.Render(http.StatusOK, "error.html", "Embeded speedtest is not configured")
 		}
-		url := vpnexiter.Konf.String("speedtest_url")
+		url := Konf.String("speedtest_url")
 		SR := SpeedtestRemote{SpeedtestUrl: url}
 		return c.Render(http.StatusOK, "speedtest.html", SR)
 	} else if mode == "server" {
-		if !vpnexiter.Konf.Exists("speedtest_cli") {
+		if !Konf.Exists("speedtest_cli") {
 			return c.Render(http.StatusOK, "error.html", "CLI speedtest is not configured")
 		}
 		SR, err := run_speedtest(c)

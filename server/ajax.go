@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo"
-	"github.com/synfinatic/vpnexiter/vpnexiter"
 	"log"
 	"net/http"
 	"os/exec"
@@ -20,7 +19,7 @@ import (
  * Return a list of VPN Vendors
  */
 func vendors(c echo.Context) error {
-	venlist := vpnexiter.Konf.Strings("vendors")
+	venlist := Konf.Strings("vendors")
 	return c.JSONPretty(http.StatusOK, venlist, " ")
 }
 
@@ -29,7 +28,7 @@ func vendors(c echo.Context) error {
  */
 func levels(c echo.Context) error {
 	vendor := c.Param("vendor")
-	l := vpnexiter.Levels(vendor)
+	l := Levels(vendor)
 	return c.JSONPretty(http.StatusOK, l, " ")
 }
 
@@ -58,7 +57,7 @@ func level(c echo.Context) error {
 		}
 		path = append(path, strings.ReplaceAll(c.Param(pname), "+", " "))
 	}
-	keys, err := vpnexiter.GetPathKeys(vendor, path)
+	keys, err := GetPathKeys(vendor, path)
 	if err != nil {
 		return c.String(http.StatusNotFound, err.Error())
 	}
@@ -72,7 +71,7 @@ func level(c echo.Context) error {
  * Grab a list of "local" speedtest servers
  */
 func speedtest_servers(c echo.Context) error {
-	e := exec.Command(vpnexiter.Konf.String("speedtest"), "--servers", "-f", "json-pretty")
+	e := exec.Command(Konf.String("speedtest"), "--servers", "-f", "json-pretty")
 	output, err := e.Output()
 	if err != nil {
 		log.Printf("error at output")
@@ -98,7 +97,7 @@ func speedtest(c echo.Context) error {
 	} else {
 		log.Printf("Letting speedtest.net pick our server...")
 	}
-	e := exec.Command(vpnexiter.Konf.String("speedtest"), args...)
+	e := exec.Command(Konf.String("speedtest"), args...)
 
 	output, err := e.Output()
 	if err != nil {
@@ -115,7 +114,7 @@ func speedtest(c echo.Context) error {
 func update(c echo.Context) error {
 	vendor := c.Param("vendor")
 	ipaddr := c.Param("ipaddr")
-	err := vpnexiter.Update(vendor, ipaddr)
+	err := Update(vendor, ipaddr)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -127,7 +126,7 @@ func update(c echo.Context) error {
  */
 func servers(c echo.Context) error {
 	vendor := c.Param("vendor")
-	levels := vpnexiter.Levels(vendor)
+	levels := Levels(vendor)
 	log.Printf("%s has %d levels", vendor, len(levels))
 	log.Printf("param names: %s", string(strings.Join(c.ParamNames(), ", ")))
 	var path []string
@@ -139,14 +138,14 @@ func servers(c echo.Context) error {
 		path = append(path, strings.ReplaceAll(c.Param(pname), "+", " "))
 	}
 
-	servers, err := vpnexiter.GetServers(vendor, path)
+	servers, err := GetServers(vendor, path)
 	if err != nil {
 		return c.String(http.StatusNotFound, err.Error())
 	}
 	if len(servers) == 0 {
 		return c.String(http.StatusNotFound, fmt.Sprintf("%s has no servers", vendor))
 	}
-	slist, err := vpnexiter.Server2ServerList(vendor, path)
+	slist, err := Server2ServerList(vendor, path)
 	if err != nil {
 		return c.String(http.StatusNotFound, err.Error())
 	}
@@ -169,13 +168,13 @@ func exits(c echo.Context) error {
 
 func _exits(c echo.Context) (interface{}, int, error) {
 	vendor := c.Param("vendor")
-	levels := vpnexiter.Levels(vendor)
+	levels := Levels(vendor)
 	vpath := vendor + ".servers"
 	lvls := len(levels)
 	switch lvls {
 	case 0:
 		log.Printf("getting servers for %s", vendor)
-		data := vpnexiter.Konf.Strings(vpath)
+		data := Konf.Strings(vpath)
 		return data, 0, nil
 	case 1, 2, 3, 4, 5:
 		data := walk_levels(vpath, lvls, 1)
@@ -193,7 +192,7 @@ func walk_levels(path string, levels int, depth int) interface{} {
 	if levels <= depth {
 		// this level is a map[string]interface
 		us := make(map[string]interface{}, 0)
-		keys := vpnexiter.Konf.MapKeys(path)
+		keys := Konf.MapKeys(path)
 		for _, key := range keys {
 			newpath := path + "." + key
 			fmt.Printf("going deeper: %s\n", newpath)
@@ -202,7 +201,7 @@ func walk_levels(path string, levels int, depth int) interface{} {
 		return us
 	} else {
 		// this level is the final level and a map[string][]string
-		us := vpnexiter.Konf.StringsMap(path)
+		us := Konf.StringsMap(path)
 		return us
 	}
 }
@@ -210,7 +209,7 @@ func walk_levels(path string, levels int, depth int) interface{} {
 func SelectExit(c echo.Context) error {
 	exit := c.Param("exit")
 	if exit == "" {
-		vendors := vpnexiter.LoadVendors()
+		vendors := LoadVendors()
 		return c.Render(http.StatusOK, "select_exit.html", vendors)
 	} else {
 		// FIXME: actually do something useful here
