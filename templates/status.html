@@ -5,7 +5,8 @@
     <li>Vendor: {{ .Vendor }}</li>
     <li>Exit Node: {{ .Exit }}</li>
     <li>Exit Path: {{ StringsJoin .ExitPath " / " }}</li>
-    <li>Status: <pre>{{ .StatusOutput }}</pre></li>
-    {{ end }}
 </ul>
+Status:
+<pre>{{ .StatusOutput }}</pre>
+    {{ end }}
 {{end}}

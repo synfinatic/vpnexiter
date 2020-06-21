@@ -23,6 +23,7 @@ type GlobalState struct {
 	ExitPath      []string
 	StatusOutput  string
 	VPN           *vpn.VpnServer
+	Vendors       map[string]*VendorConfig
 }
 
 var GS = GlobalState{
@@ -33,6 +34,7 @@ var GS = GlobalState{
 	ExitPath:      []string{},
 	StatusOutput:  "",
 	VPN:           nil,
+	Vendors:       nil,
 }
 
 func (gs *GlobalState) SetState(state tribool.Tribool) {
@@ -87,12 +89,12 @@ func Status(c echo.Context) error {
 		trib, err := GS.VPN.IsUp()
 		GS.SetState(trib)
 		if err != nil {
-			log.Printf("Error getting IsVpnUp()")
+			log.Printf("Error getting IsUp()")
 			return c.Render(http.StatusOK, "error.html", err.Error())
 		}
 		buf, err := GS.VPN.Status()
 		if err != nil {
-			log.Printf("Error getting VpnStatus()")
+			log.Printf("Error getting Status()")
 			return c.Render(http.StatusOK, "error.html", err.Error())
 		}
 		GS.StatusOutput = buf.String()
@@ -104,18 +106,45 @@ func SelectExit(c echo.Context) error {
 	exit := c.Param("exit")
 	vendor := c.Param("vendor")
 	if exit == "" {
-		vendors := LoadVendors()
-		return c.Render(http.StatusOK, "select_exit.html", vendors)
+		GS.Vendors = LoadVendors()
+		return c.Render(http.StatusOK, "select_exit.html", GS.Vendors)
 	} else {
 		err := GS.VPN.UpdateConfig(vendor, exit)
+		GS.Vendor = vendor
+		GS.Exit = exit
+		GS.SetState(tribool.False)
 		if err != nil {
 			return c.Render(http.StatusOK, "error.html", err.Error())
 		}
-		_, err = GS.VPN.Restart()
+
+		success, err := GS.VPN.Restart()
 		if err != nil {
 			return c.Render(http.StatusOK, "error.html", err.Error())
 		}
-		return c.Render(http.StatusOK, "error.html", "VPN restarted")
+
+		buf, err := GS.VPN.Status()
+		if err != nil {
+			log.Printf("Error getting Status()")
+			return c.Render(http.StatusOK, "error.html", err.Error())
+		}
+		GS.StatusOutput = buf.String()
+
+		log.Printf("Looking for exit '%s' in %v\n", exit, GS.Vendors[vendor].Servers)
+		path, err := FindServerMapEntry(&GS.Vendors[vendor].Servers, exit)
+		if err != nil {
+			return c.Render(http.StatusOK, "error.html", err.Error())
+		}
+		GS.ExitPath = []string{vendor}
+		GS.ExitPath = append(GS.ExitPath, path...)
+
+		if success {
+			log.Printf("VPN restart was successful\n")
+			GS.SetState(tribool.True)
+			return c.Render(http.StatusOK, "error.html", "VPN restarted")
+		} else {
+			log.Printf("VPN restart failed\n")
+			return c.Render(http.StatusOK, "error.html", "VPN restart failed")
+		}
 	}
 }
 

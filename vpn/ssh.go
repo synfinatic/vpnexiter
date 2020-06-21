@@ -72,6 +72,10 @@ func (vs *VpnServer) get_up_ssh() tribool.Tribool {
 	router, config := vs.ssh_config()
 	conn, _ := ssh.Dial("tcp", router, &config)
 	defer conn.Close()
+	return vs.check_ssh(conn)
+}
+
+func (vs *VpnServer) check_ssh(conn *ssh.Client) tribool.Tribool {
 	tmpl := vs.Konf.String("router.check.command")
 	cmd, err := vs.render_gs_template("ssh.check.command", tmpl)
 	if err != nil {
@@ -151,8 +155,8 @@ func (vs *VpnServer) restart_vpn_ssh() (bool, error) {
 
 	var buf bytes.Buffer
 	for i := 0; i < vs.WaitSeconds; i++ {
-		buf, err = exec_ssh_command(*conn, vs.Konf.String("router.check_command"))
-		if err != nil {
+		ret := vs.check_ssh(conn)
+		if ret != tribool.True {
 			duration, _ := time.ParseDuration("1s")
 			time.Sleep(duration)
 			continue

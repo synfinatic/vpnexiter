@@ -84,22 +84,37 @@ func (sm *ServerMap) addMap(key string, mdata *ServerMap) {
 }
 
 /*
- * Returns the path to our current node
+ * returns the first path to the value or returns an error if not found
  */
-func (sm ServerMap) getPath() []string {
-	path := []string{sm.Name}
-	p := sm.Parent
-	// walk up our tree
-	for p != nil {
-		path = append(path, p.Name)
-		p = sm.Parent
+func FindServerMapEntry(sm *ServerMap, value string) ([]string, error) {
+	log.Printf("Looking for %s in %v\n", value, sm)
+	if sm.hasList() {
+		l := sm.getList()
+		for _, server := range l {
+			// our value is an entry in a List
+			if server == value {
+				log.Printf("Found hit in a list for %s", server)
+				return []string{server}, nil
+			}
+		}
 	}
-	// standard in-place reverse slice elements
-	last := len(path) - 1
-	for i := 0; i < len(path)/2; i++ {
-		path[i], path[last-1] = path[last-1], path[i]
+	if sm.hasMap() {
+		m := sm.getMap()
+		for key, x := range m {
+			// Check if our value is a key in a Map
+			if key == value {
+				return []string{key}, nil
+			}
+			// recurse
+			path, err := FindServerMapEntry(&x, value)
+			if err == nil {
+				log.Printf("Found hit in a map for %s: %s", value, path)
+				path = append([]string{key}, path...)
+				return path, nil
+			}
+		}
 	}
-	return path
+	return nil, fmt.Errorf("FindServerMapEntry: Unable to locate %s", value)
 }
 
 /*
@@ -119,9 +134,9 @@ func _walkServerMap(sm ServerMap, depth int) {
 	}
 	if sm.hasMap() {
 		m := sm.getMap()
-		for key, sm := range m {
+		for key, x := range m {
 			fmt.Printf("%s%s:\n", strings.Repeat("\t", depth), key)
-			_walkServerMap(sm, depth+1)
+			_walkServerMap(x, depth+1)
 		}
 	}
 }
