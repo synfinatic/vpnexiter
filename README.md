@@ -10,6 +10,15 @@ on performance or geo-location requirements.
 VPNExiter is a GoLang service which runs on your router (or other device)
 and makes it convienent to manage your VPN connection.
 
+### Project Status
+
+VPNExiter is early beta.  Right now I have it working for a single use case
+to the point where it is useful.  But I'm sure there are bugs and lots of missing
+features before I consider it "good enough".
+
+Feel free to download and give it a try, but right now I'd consider it only
+usable by advanced users.  Bug reports and pull requests are welcome!
+
 ### Features
 
  * Easily switch between different VPN providers or exit points
