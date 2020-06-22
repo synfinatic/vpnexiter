@@ -7,8 +7,8 @@ on your network can take advantage of the VPN, you may find it hard to
 manage your VPN connections and choose different exit gateways based
 on performance or geo-location requirements.
 
-VPNExiter is a GoLang service which runs on your router and makes it
-convienent to manage your VPN connection.
+VPNExiter is a GoLang service which runs on your router (or other device)
+and makes it convienent to manage your VPN connection.
 
 ### Features
 
@@ -19,16 +19,21 @@ convienent to manage your VPN connection.
 
 #### On Device
 
-Development was done on the Ubiquiti USG and EdgeRouter Lite-3.  These were
+Development was done targeting the Ubiquiti USG and EdgeRouter Lite-3.  These were
 picked due to their low cost and relatively limited hardware specs (dual-core
 500Mhz MIPS64 CPU and 512MB of RAM).  Hence, you should be able to run
 VPNExiter on any
 [hardware/OS that GoLang supports](https://github.com/golang/go/wiki/MinimumRequirements).
 
+#### Service
+
+It's easy to run VPNExiter as a service on your NAS or home computer.  VPNExiter
+supports controlling the VPN service on your router via SSH.
+
 #### Docker
 You can also run VPNExiter on a computer on your network via
 [Docker](https://www.docker.com).  This is a more complicated setup, since VPNExiter
-has to ssh into your router to reconfigure it, but may be preferable for some
+has to SSH into your router to reconfigure it, but may be preferable for some
 use cases.
 
 

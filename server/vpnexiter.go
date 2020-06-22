@@ -83,7 +83,7 @@ func Version(c echo.Context) error {
 }
 
 func Status(c echo.Context) error {
-	forced := c.Param("forced")
+	forced := c.QueryParam("forced") // forced=1
 	if GS.Connected == tribool.Maybe || len(forced) > 0 {
 		log.Printf("Checking status of VPN\n")
 		trib, err := GS.VPN.IsUp()
@@ -140,10 +140,11 @@ func SelectExit(c echo.Context) error {
 		if success {
 			log.Printf("VPN restart was successful\n")
 			GS.SetState(tribool.True)
-			return c.Render(http.StatusOK, "error.html", "VPN restarted")
+			return c.Redirect(http.StatusTemporaryRedirect, "/#status")
 		} else {
 			log.Printf("VPN restart failed\n")
-			return c.Render(http.StatusOK, "error.html", "VPN restart failed")
+			// return c.Render(http.StatusOK, "error.html", "VPN restart failed")
+			return c.Redirect(http.StatusTemporaryRedirect, "/#status")
 		}
 	}
 }
@@ -210,7 +211,6 @@ func main() {
 	e.GET("/", Index)
 	e.GET("/version", Version)
 	e.GET("/status", Status)
-	e.GET("/status/:forced", Status)
 	e.GET("/select_exit", SelectExit)
 	e.GET("/select_exit/:vendor/:exit", SelectExit)
 

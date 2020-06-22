@@ -58,28 +58,24 @@
             </div>
 
             <ul> <!-- class="nav_links"> -->
-                <li><a href="/status">Status</a></li>
-                <li><a href="/select_exit">Select Exit</a></li>
+                <li><a href="/status#status">Status</a></li>
+                <li><a href="/select_exit#select-exit">Select Exit</a></li>
                 {{ if .HasLocalSpeedtest }}
-                <li><a href="/speedtest/server">Server Speed Test</a></li>
+                <li><a href="/speedtest/server#speedtest-server">Server Speed Test</a></li>
                 {{end}}
                 {{ if .HasEmbededSpeedtest }}
-                <li><a href="/speedtest/embeded">Browser Speed Test</a></li>
+                <li><a href="/speedtest/embeded#speedtest-embeded">Browser Speed Test</a></li>
                 {{end}}
-                <li><a href="/version">Version</a></li>
+                <li><a href="/version#version">Version</a></li>
             </ul>
         </header>
         <p></p>
         <!-- not sure why I need all of these, but I do! -->
-        <div id="ui-id-2" class="content"></div>
-        <div id="ui-id-3" class="content"></div>
-        <div id="ui-id-4" class="content"></div>
-        <div id="ui-id-5" class="content"></div>
-        <div id="ui-id-6" class="content"></div>
-        <div id="ui-id-7" class="content"></div>
-        <div id="ui-id-8" class="content"></div>
-        <div id="ui-id-9" class="content"></div>
-        <div id="ui-id-10" class="content"></div>
+        <div id="status" class="content"></div>
+        <div id="select-exit" class="content"></div>
+        <div id="speedtest-server" class="content"></div>
+        <div id="speedtest-embeded" class="content"></div>
+        <div id="version" class="content"></div>
     </div>
 
 </body>
