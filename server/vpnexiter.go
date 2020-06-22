@@ -3,8 +3,8 @@ package main
 import (
 	"crypto/subtle"
 	"fmt"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/synfinatic/vpnexiter/vpn"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/grignaak/tribool.v1"

@@ -42,9 +42,10 @@ Tested VPNs are:
 However, any VPN solution that meets the following requirements should be
 possible:
 
- 1. There are commands to start, stop and get the status of the service
- 1. A single file contains the necessary configuration information to switch
-    between VPN exit servers
+ 1. There are commands to start, stop and get the status of the service.
+ 2. There is a command which contains a string that can be used to determine if the VPN is up.
+ 1. A single file contains the necessary [configuration template information](https://golang.org/pkg/text/template/) to switch
+    between VPN exit servers.  Right now, the two pieces of information available to the config file is the `Vendor` name and `VpnServer` which matches the selected IP address or hostname of the selected server.
 
 ### Speedtest.net Integration
 
@@ -62,56 +63,69 @@ VPNExiter supports two different integration types:
 
 ### Configuration
 
-Configuring VPNExiter is done via a single <em>config.yaml</em> file.
+Configuring VPNExiter is done via a single <em>config.yaml</em> file.  Required fields are in __bold__ and optional fields are in _italics_.
 
- * listen:
-    * http: *http port*
-    * https: *https port*
-    * username: *http auth username*
-    * password: *http auth password using bcrypt: `htpasswd -nbB <username> <password>`*
+The `listen` block configures how VPNExiter runs
 
- * speedtest_cli: *path to speedtest cli tool*
- * speedtest_url: https://*custom*.speedtestcustom.com
+ * __listen:__
+    * __http:__ http port
+    * _username:_ http auth username
+    * _password:_ http auth password using bcrypt: `htpasswd -nbB <username> <password>`
 
- * router:
-    * mode: *ssh | local*
-    * config_file: *ipsec.conf*
-    * start_command: */usr/sbin/ipsec start*
-    * stop_command: */usr/sbin/ipsec stop*
-    * status_command: */usr/sbin/ipsec statusall | grep -q '1 up'*
-    * host: *IP address of router (default: localhost)*
-    * port: *port sshd listens on (default 22)*
-    * username: *ssh username*
-    * password: *ssh password*
+VPNExiter supports both a browser-based Speedtest URL which can be directly embeded or run the speedtest-cli on the router.
 
- * vendors:
-    - *vendor name 1*
-    - *vendor name 2*
-    - *vendor name X*
+ * _speedtest\_cli:_ path to speedtest cli tool
+ * _speedtest\_url:_ path to custom speedtest.net URL.  example: [https://synfin.speedtestcustom.com](https://synfin.speedtestcustom.com)
 
- * *vendor name 1*
-    * config_template: *path to config template*
-    * resolve_servers: true|false
-    * levels:
-        - *level 1*
-        - *level 2*
-    * servers:
-        * Level 1:
-            * Level 2:
-                - server 1
+The `router` block configures how VPNExiter should connect to the router and manage the VPN tunnel.
+
+ * __router:__
+    * __mode:__ Should be `ssh` or `local`
+    * __config_file:__ Path to VPN config file.  Example: `/etc/ipsec/ipsec.conf`
+    * __start_command:__ Command to start VPN service.  Example: `sudo /usr/sbin/ipsec start`
+    * __stop_command:__ Command to stop VPN service.  Example: `sudo /usr/sbin/ipsec stop`
+    * __status_command:__ Command to query VPN service status.  Example: `/usr/sbin/ipsec status {{.Vendor}}`
+    * __check:__
+    	* __command:__ Command to query VPN service status.  Example: `/usr/sbin/ipsec status {{.Vendor}}`
+    	* __match:__ String to look for.  Example: `CONNECTED`
+    * _ssh:_
+	   * _host:_ IP address of router to ssh to (default: 192.168.1.1)
+	   * _port:_ Port sshd listens on (default 22)
+	   * _username:_ ssh username
+	   * _password:_ ssh password
+
+The `vendors` block lists all the configured VPN vendors.
+
+ * __vendors:__
+    - __*vendor name 1*__
+    - _*vendor name 2*_
+    - _*vendor name X*_
+
+Each VPN vendor has it's own block.
+
+ * __*vendor name 1*__  // name of vendor.  Must match an item in `vendors`
+    * __config\_template:__ path to config template used to configure the VPN tunnel
+    * _resolve\_servers:_ `true` | `false` to enable DNS lookup of IP addresses for any hostnames listed as servers.  Default is false.
+    * _levels:_ // If your want to group the VPN exits by geography or other manner, you can define the levels here.
+        - *level 1*  // example: Region
+        - *level 2*  // example: City
+    * __servers:__ // list all the servers
+        * Level 1: // name of first level.  For example: North America
+            * Level 2: // name of second level. For example: San Francisco
+                - server 1 // name of the server or IP address
                 - server 2
                 - server 3
-            * Level 2:
+            * Level 2:  // New York
                 - server 1
-        * Level 1:
-            * Level 2:
+        * Level 1:  // Europe
+            * Level 2:  // London
                 - server 1
-            * Level 2:
+            * Level 2:  // Paris
                 - server 1
-            * Level 2:
+            * Level 2:  // Berlin
                 - server 1
-        * Level 1:
-            * Level 2:
+        * Level 1:  // Asia
+            * Level 2:  // Tokyo
                 - server 1
                 - server 2
 

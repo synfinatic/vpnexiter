@@ -93,6 +93,7 @@ func (vs *VpnServer) Status() (bytes.Buffer, error) {
 // Everything that belongs in the config template needs to be here
 type ConfigTemplate struct {
 	VpnServer string
+	Vendor    string
 }
 
 /*
@@ -103,6 +104,7 @@ func (vs *VpnServer) create_config() (string, error) {
 	tmpl := vs.Konf.String(vs.Vendor + ".config_template")
 	conf := ConfigTemplate{
 		VpnServer: vs.Exit,
+		Vendor:    vs.Vendor,
 	}
 	tfile, err := template.ParseFiles(tmpl)
 	if err != nil {

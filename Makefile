@@ -31,7 +31,7 @@ clean:
 	rm -f main
 
 clean-go:
-	go clean -i -r cache -modcache
+	go clean -i -r -cache -modcache
 
 vpnexiter: $(OUTPUT_VPNEXIT)
 
