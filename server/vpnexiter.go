@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type GlobalState struct {
@@ -106,7 +107,6 @@ func SelectExit(c echo.Context) error {
 	exit := c.Param("exit")
 	vendor := c.Param("vendor")
 	if exit == "" {
-		GS.Vendors = LoadVendors()
 		return c.Render(http.StatusOK, "select_exit.html", GS.Vendors)
 	} else {
 		err := GS.VPN.UpdateConfig(vendor, exit)
@@ -179,10 +179,32 @@ func float64_to_int(val float64) int {
 	return (int)(val)
 }
 
+/*
+ * Call in a goroutine because this blocks in a long sleep() loop
+ * Allows us to asyncly load our GS.Vendors at startup and then
+ * refresh our cache every X minutes
+ */
+func load_vendors() {
+	GS.Vendors = LoadVendors()
+	if Konf.Exists("dns_refresh_minutes") {
+		if Konf.Int64("dns_refresh_minutes") >= 5 {
+			for true {
+				min := fmt.Sprintf("%dm", Konf.Int64("dns_refresh_minutes"))
+				d, _ := time.ParseDuration(min)
+				time.Sleep(d)
+				GS.Vendors = LoadVendors() // do this at startup because it is slow
+			}
+		} else {
+			log.Printf("Warning: `dns_refresh_minutes` is set, but < 5 so ignoring")
+		}
+	}
+}
+
 func main() {
 	e := echo.New()
 	e.Use(middleware.Logger()) // debug logging: https://echo.labstack.com/middleware/logger
 	LoadConfig()
+	go load_vendors()
 
 	// Enable basic auth?
 	if Konf.Exists("listen.username") && Konf.Exists("listen.password") {

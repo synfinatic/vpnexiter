@@ -61,6 +61,15 @@ possible:
  1. A single file contains the necessary [configuration template information](https://golang.org/pkg/text/template/) to switch
     between VPN exit servers.  Right now, the two pieces of information available to the config file is the `Vendor` name and `VpnServer` which matches the selected IP address or hostname of the selected server.
 
+#### Shamless Plug
+
+If you're looking for a secure VPN provider, I personally like and use
+[PersonalVPN from Witopia](https://www.personalvpn.com).  If you're interested
+in signing up, you can use my
+[referal link]( https://my.personalvpn.com/ref/jfTXEsBs) to get at 15% discount
+and I get an equal credit.
+
+
 ### Speedtest.net Integration
 
 VPNExiter supports two different integration types:
@@ -83,8 +92,14 @@ The `listen` block configures how VPNExiter runs
 
  * __listen:__
     * __http:__ http port
+    * _address:_ IP address to listen on.  Default is all interfaces (0.0.0.0)
     * _username:_ http auth username
     * _password:_ http auth password using bcrypt: `htpasswd -nbB <username> <password>`
+
+
+If you enable `resolve\_servers` for one or more vendors below, set
+`dns_refresh_minutes` to a value => 5 to enable refreshing those DNS entries.
+ * _dns\_refresh\_minutes:_ minutes between refreshing DNS entries
 
 VPNExiter supports both a browser-based Speedtest URL which can be directly embeded or run the speedtest-cli on the router.
 
@@ -149,3 +164,6 @@ Each VPN vendor has it's own block.
     * servers:
         - server 1
         - server 2
+
+
+

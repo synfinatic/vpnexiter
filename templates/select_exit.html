@@ -5,6 +5,7 @@
     });
 </script>
 
+{{ if len . }}
 <ul id="select_exit" class="ui-menu">
     <li class="ui-state-disabled"><div>VPN Vendors</div></li>
     {{range $vendor, $vendor_config := .}}
@@ -16,6 +17,7 @@
     </li>
     {{end}}
 </ul>
-
+{{else}}
+Loading vendors...  Please try again soon.
 {{end}}
-
+{{end}}

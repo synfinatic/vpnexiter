@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 )
 
 type VendorConfig struct {
@@ -22,7 +23,7 @@ func LoadVendors() map[string]*VendorConfig {
 
 	for _, vendor := range Konf.Strings("vendors") {
 		log.Printf("Loading: %s", vendor)
-
+		begin := time.Now()
 		vcmap[vendor] = &VendorConfig{
 			Name:    vendor,
 			Levels:  []string{},
@@ -41,6 +42,8 @@ func LoadVendors() map[string]*VendorConfig {
 		} else {
 			build_server_map(&vcmap[vendor].Servers, start, vcmap[vendor].Levels, resolve)
 		}
+		t := time.Now()
+		log.Printf("Finished loading %s in %.2fsec", vendor, t.Sub(begin).Seconds())
 	}
 	return vcmap
 }
