@@ -14,8 +14,8 @@ import (
 /*
  * Updates the IPSec config on a local system
  */
-func (vs *VpnServer) update_config_local() error {
-	cfile, err := vs.create_config()
+func (vs *VpnServer) updateConfigLocal() error {
+	cfile, err := vs.createConfig()
 	if err != nil {
 		return err
 	}
@@ -29,16 +29,16 @@ func (vs *VpnServer) update_config_local() error {
 	return nil
 }
 
-func (vs *VpnServer) get_up_local() tribool.Tribool {
+func (vs *VpnServer) getUpLocal() tribool.Tribool {
 
 	tmpl := vs.Konf.String("router.check.command")
-	cmd, err := vs.render_gs_template("local.check.command", tmpl)
+	cmd, err := vs.renderGsTemplate("local.check.command", tmpl)
 	if err != nil {
 		log.Printf("Unable to render template: %s", tmpl)
 		return tribool.Maybe
 	}
 	log.Printf("running %s\n", cmd)
-	out, err := exec_local_command(cmd)
+	out, err := execLocalCommand(cmd)
 	if err != nil {
 		log.Printf("error running: %s\n", cmd)
 		return tribool.False
@@ -55,11 +55,11 @@ func (vs *VpnServer) get_up_local() tribool.Tribool {
  * Exec a command locally
  * Returns stdout on success or stderr on error
  */
-func exec_local_command(command string) (bytes.Buffer, error) {
-	exec_cmd := strings.Split(command, " ")
-	name := exec_cmd[0]
-	exec_cmd = exec_cmd[1:]
-	cmd := exec.Command(name, exec_cmd...)
+func execLocalCommand(command string) (bytes.Buffer, error) {
+	execCmd := strings.Split(command, " ")
+	name := execCmd[0]
+	execCmd = execCmd[1:]
+	cmd := exec.Command(name, execCmd...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -80,13 +80,13 @@ func exec_local_command(command string) (bytes.Buffer, error) {
  * on error, return stderr and the error
  * on success, return stdout and nil
  */
-func (vs *VpnServer) status_local() (bytes.Buffer, error) {
-	cmd, err := vs.render_gs_template("local_status", vs.Konf.String("router.status_command"))
+func (vs *VpnServer) statusLocal() (bytes.Buffer, error) {
+	cmd, err := vs.renderGsTemplate("local_status", vs.Konf.String("router.status_command"))
 	if err != nil {
 		var buf bytes.Buffer
 		return buf, err
 	}
-	out, err := exec_local_command(cmd)
+	out, err := execLocalCommand(cmd)
 	if err != nil {
 		return out, err
 	}
@@ -97,33 +97,33 @@ func (vs *VpnServer) status_local() (bytes.Buffer, error) {
 /*
  * Restart IPSec on the local host
  */
-func (vs *VpnServer) restart_vpn_local() (bool, error) {
-	var vpn_up bool = false
+func (vs *VpnServer) restartVpnLocal() (bool, error) {
+	var vpnUp bool = false
 
-	_, err := exec_local_command(vs.Konf.String("router.stop_command"))
+	_, err := execLocalCommand(vs.Konf.String("router.stop_command"))
 	if err != nil {
-		return vpn_up, err
+		return vpnUp, err
 	}
-	_, err = exec_local_command(vs.Konf.String("router.start_command"))
+	_, err = execLocalCommand(vs.Konf.String("router.start_command"))
 	if err != nil {
-		return vpn_up, err
+		return vpnUp, err
 	}
 	// wait for VPN to come up
 	for i := 0; i < vs.WaitSeconds; i++ {
-		_, err = exec_local_command(vs.Konf.String("router.check_command"))
+		_, err = execLocalCommand(vs.Konf.String("router.check_command"))
 		if err != nil {
 			duration, _ := time.ParseDuration("1s")
 			time.Sleep(duration)
 			continue
 		} else {
-			vpn_up = true
+			vpnUp = true
 			break
 		}
 	}
-	if !vpn_up {
-		return vpn_up, fmt.Errorf(
+	if !vpnUp {
+		return vpnUp, fmt.Errorf(
 			"%s VPN to %s did not come up after %d seconds",
 			vs.Exit, vs.Vendor, vs.WaitSeconds)
 	}
-	return vpn_up, nil
+	return vpnUp, nil
 }

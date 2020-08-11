@@ -53,38 +53,38 @@ func (vs *VpnServer) UpdateConfig(vendor string, exit string) error {
 	if vs.Type == "ssh" {
 		vs.Vendor = vendor
 		vs.Exit = exit
-		return vs.update_config_ssh()
+		return vs.updateConfigSsh()
 	} else if vs.Type == "local" {
 		vs.Vendor = vendor
 		vs.Exit = exit
-		return vs.update_config_local()
+		return vs.updateConfigLocal()
 	}
 	return fmt.Errorf("Unsupported VpnServer.Type: %s", vs.Type)
 }
 
 func (vs *VpnServer) IsUp() (tribool.Tribool, error) {
 	if vs.Type == "ssh" {
-		return vs.get_up_ssh(), nil
+		return vs.getUpSsh(), nil
 	} else if vs.Type == "local" {
-		return vs.get_up_local(), nil
+		return vs.getUpLocal(), nil
 	}
 	return tribool.Maybe, fmt.Errorf("Unsupported VpnServer.Type: %s", vs.Type)
 }
 
 func (vs *VpnServer) Restart() (bool, error) {
 	if vs.Type == "ssh" {
-		return vs.restart_vpn_ssh()
+		return vs.restartVpnSsh()
 	} else if vs.Type == "local" {
-		return vs.restart_vpn_local()
+		return vs.restartVpnLocal()
 	}
 	return false, fmt.Errorf("Unsupported VpnServer.Type: %s", vs.Type)
 }
 
 func (vs *VpnServer) Status() (bytes.Buffer, error) {
 	if vs.Type == "ssh" {
-		return vs.status_ssh()
+		return vs.statusSsh()
 	} else if vs.Type == "local" {
-		return vs.status_local()
+		return vs.statusLocal()
 	}
 	var buf bytes.Buffer // can't use nil in return
 	return buf, fmt.Errorf("Unsupported VpnServer.Type: %s", vs.Type)
@@ -100,7 +100,7 @@ type ConfigTemplate struct {
  * Helper function to create the IPSec config for a given vendor
  * Returns the name of a tempfile containing the contents of the config file
  */
-func (vs *VpnServer) create_config() (string, error) {
+func (vs *VpnServer) createConfig() (string, error) {
 	tmpl := vs.Konf.String(vs.Vendor + ".config_template")
 	conf := ConfigTemplate{
 		VpnServer: vs.Exit,
@@ -129,13 +129,13 @@ func (vs *VpnServer) create_config() (string, error) {
  * commands.  Users can use `Vendor`, `Exit` or any
  * exported value in GlobalState
  */
-func (vs *VpnServer) render_gs_template(name string, template_str string) (string, error) {
-	templ, err := template.New(name).Parse(template_str)
+func (vs *VpnServer) renderGsTemplate(name string, templ string) (string, error) {
+	t, err := template.New(name).Parse(templ)
 	if err != nil {
 		return "", err
 	}
 	var buf bytes.Buffer
-	err = templ.Execute(&buf, *vs)
+	err = t.Execute(&buf, *vs)
 	if err != nil {
 		return "", err
 	}

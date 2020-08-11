@@ -16,20 +16,20 @@ import (
 /*
  * Updates the config on a remote system via SSH
  */
-func (vs *VpnServer) update_config_ssh() error {
+func (vs *VpnServer) updateConfigSsh() error {
 
-	config_file := vs.Konf.String("router.config_file")
+	configFile := vs.Konf.String("router.config_file")
 
-	cfile, err := vs.create_config()
+	cfile, err := vs.createConfig()
 	if err != nil {
-		log.Printf("unable to create_config")
+		log.Printf("unable to createConfig")
 		return err
 	}
 	defer os.Remove(cfile)
 
-	log.Printf("create_config: %s", cfile)
+	log.Printf("createConfig: %s", cfile)
 
-	router, clientConfig := vs.ssh_config()
+	router, clientConfig := vs.sshConfig()
 	client := scp.NewClient(router, &clientConfig)
 
 	err = client.Connect()
@@ -44,12 +44,12 @@ func (vs *VpnServer) update_config_ssh() error {
 	f, _ := os.Open(cfile)
 	defer f.Close()
 
-	err = client.CopyFile(f, config_file, "0644")
+	err = client.CopyFile(f, configFile, "0644")
 	if err != nil {
 		log.Printf("failed client.CopyFile() %s", err.Error())
 		return err
 	}
-	log.Printf("Success copying %s to %s/%s", cfile, router, config_file)
+	log.Printf("Success copying %s to %s/%s", cfile, router, configFile)
 
 	return nil
 }
@@ -57,7 +57,7 @@ func (vs *VpnServer) update_config_ssh() error {
 /*
  * Builds a ssh.ClientConfig for a ssh connection
  */
-func (vs *VpnServer) ssh_config() (string, ssh.ClientConfig) {
+func (vs *VpnServer) sshConfig() (string, ssh.ClientConfig) {
 	router := fmt.Sprintf("%s:%d",
 		vs.Konf.String("router.host"),
 		vs.Konf.Int("router.port"))
@@ -68,23 +68,23 @@ func (vs *VpnServer) ssh_config() (string, ssh.ClientConfig) {
 	return router, clientConfig
 }
 
-func (vs *VpnServer) get_up_ssh() tribool.Tribool {
-	router, config := vs.ssh_config()
+func (vs *VpnServer) getUpSsh() tribool.Tribool {
+	router, config := vs.sshConfig()
 	conn, _ := ssh.Dial("tcp", router, &config)
 	defer conn.Close()
-	return vs.check_ssh(conn)
+	return vs.checkSsh(conn)
 }
 
-func (vs *VpnServer) check_ssh(conn *ssh.Client) tribool.Tribool {
+func (vs *VpnServer) checkSsh(conn *ssh.Client) tribool.Tribool {
 	tmpl := vs.Konf.String("router.check.command")
-	cmd, err := vs.render_gs_template("ssh.check.command", tmpl)
+	cmd, err := vs.renderGsTemplate("ssh.check.command", tmpl)
 	if err != nil {
 		log.Printf("Unable to render template: %s", tmpl)
 		return tribool.Maybe
 	}
 
 	log.Printf("running %s\n", cmd)
-	out, err := exec_ssh_command(*conn, cmd)
+	out, err := execSshCommand(conn, cmd)
 	if err != nil {
 		log.Printf("error running: %s\n", cmd)
 		return tribool.False
@@ -97,17 +97,17 @@ func (vs *VpnServer) check_ssh(conn *ssh.Client) tribool.Tribool {
 	return tribool.False
 }
 
-func (vs *VpnServer) status_ssh() (bytes.Buffer, error) {
+func (vs *VpnServer) statusSsh() (bytes.Buffer, error) {
 	var buf bytes.Buffer
-	router, config := vs.ssh_config()
+	router, config := vs.sshConfig()
 	conn, _ := ssh.Dial("tcp", router, &config)
 	defer conn.Close()
 
-	cmd, err := vs.render_gs_template("ssh_status", vs.Konf.String("router.status_command"))
+	cmd, err := vs.renderGsTemplate("ssh_status", vs.Konf.String("router.status_command"))
 	if err != nil {
 		return buf, err
 	}
-	buf, err = exec_ssh_command(*conn, cmd)
+	buf, err = execSshCommand(conn, cmd)
 	if err != nil {
 		return buf, err
 	}
@@ -118,7 +118,7 @@ func (vs *VpnServer) status_ssh() (bytes.Buffer, error) {
  * Run a command on a ssh connection
  * Returns: stdout on success or stderr on error
  */
-func exec_ssh_command(conn ssh.Client, command string) (bytes.Buffer, error) {
+func execSshCommand(conn *ssh.Client, command string) (bytes.Buffer, error) {
 	session, _ := conn.NewSession()
 	defer session.Close()
 
@@ -137,38 +137,38 @@ func exec_ssh_command(conn ssh.Client, command string) (bytes.Buffer, error) {
 /*
  * SSH to the router and restart IPSec
  */
-func (vs *VpnServer) restart_vpn_ssh() (bool, error) {
-	var vpn_up bool = false
+func (vs *VpnServer) restartVpnSsh() (bool, error) {
+	var vpnUp bool = false
 
-	router, config := vs.ssh_config()
+	router, config := vs.sshConfig()
 	conn, _ := ssh.Dial("tcp", router, &config)
 	defer conn.Close()
 
-	_, err := exec_ssh_command(*conn, vs.Konf.String("router.stop_command"))
+	_, err := execSshCommand(conn, vs.Konf.String("router.stop_command"))
 	if err != nil {
-		return vpn_up, err
+		return vpnUp, err
 	}
-	_, err = exec_ssh_command(*conn, vs.Konf.String("router.start_command"))
+	_, err = execSshCommand(conn, vs.Konf.String("router.start_command"))
 	if err != nil {
-		return vpn_up, err
+		return vpnUp, err
 	}
 
 	var buf bytes.Buffer
 	for i := 0; i < vs.WaitSeconds; i++ {
-		ret := vs.check_ssh(conn)
+		ret := vs.checkSsh(conn)
 		if ret != tribool.True {
 			duration, _ := time.ParseDuration("1s")
 			time.Sleep(duration)
 			continue
 		} else {
-			vpn_up = true
+			vpnUp = true
 			break
 		}
 	}
-	if !vpn_up {
-		return vpn_up, fmt.Errorf(
+	if !vpnUp {
+		return vpnUp, fmt.Errorf(
 			"%s VPN to %s did not come up after %d seconds: %s",
 			vs.Exit, vs.Vendor, vs.WaitSeconds, buf.String())
 	}
-	return vpn_up, nil
+	return vpnUp, nil
 }

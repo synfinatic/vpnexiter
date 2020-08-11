@@ -1,0 +1,29 @@
+# this config is very similar to what I use for my Ubiquiti USG
+# You'll definitely want to edit based on your needs
+
+conn %default
+    keyexchange = ikev2
+    type = tunnel
+    # USG doesn't support better crypto in hardware
+    ike = aes128-sha1-modp2048
+    esp = aes128-sha1-modp2048
+
+conn {{.Vendor}}
+    dpddelay = 30s
+    dpdtimeout = 90s
+    dpdaction = restart
+    reauth = yes
+    ikelifetime = 24h
+    rekey = yes
+    auto = start        # can't use auto=route, see notes
+
+    leftsourceip = %config4
+    leftsubnet = 0.0.0.0/0
+    leftupdown = /etc/ipsec/ipsec-updown.sh
+    leftauth = eap-md5
+    eap_identity = W\YOUR_WITOPIA_USERNAME_HERE
+
+    right = {{.VpnServer}}
+    rightid = %any
+    rightsubnet = 0.0.0.0/0
+    rightauth = pubkey

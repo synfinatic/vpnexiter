@@ -31,7 +31,7 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func LoadConfig() {
+func LoadConfig(cfile string) {
 	// Set Defaults
 	Konf.Load(confmap.Provider(map[string]interface{}{
 		"listen.address": "0.0.0.0",
@@ -43,23 +43,23 @@ func LoadConfig() {
 		"router.user":    "admin",
 	}, "."), nil)
 
-	for _, fname := range configFiles() {
-		if fileExists(fname) {
-			f := file.Provider(fname)
-			if err := Konf.Load(f, yaml.Parser()); err != nil {
-				log.Fatal("error loading config: %v", err)
+	if len(cfile) > 0 {
+		log.Printf("Loading config file: %s", cfile)
+		f := file.Provider(cfile)
+		if err := Konf.Load(f, yaml.Parser()); err != nil {
+			log.Fatalf("error loading config: %s", err.Error())
+		}
+	} else {
+		for _, fname := range configFiles() {
+			if fileExists(fname) {
+				log.Printf("Loading config file: %s", fname)
+				f := file.Provider(fname)
+				if err := Konf.Load(f, yaml.Parser()); err != nil {
+					log.Fatalf("error loading config: %s", err.Error())
+				}
 			}
 		}
 	}
-	/* FIXME:
-	var vconf vpnexiter.Configurations
-
-	err := viper.Unmarshal(&vconf)
-	if err != nil {
-		fmt.Printf("Unable to decode into struct, %v", err)
-	}
-	*/
-
 }
 
 type Configurations struct {

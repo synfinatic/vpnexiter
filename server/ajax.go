@@ -70,7 +70,7 @@ func level(c echo.Context) error {
 /*
  * Grab a list of "local" speedtest servers
  */
-func speedtest_servers(c echo.Context) error {
+func speedtestServers(c echo.Context) error {
 	e := exec.Command(Konf.String("speedtest"), "--servers", "-f", "json-pretty")
 	output, err := e.Output()
 	if err != nil {
@@ -141,11 +141,11 @@ func servers(c echo.Context) error {
 }
 
 func exits(c echo.Context) error {
-	exit_map, _, err := _exits(c)
+	exitMap, _, err := _exits(c)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
-	jdata, err := json.Marshal(exit_map)
+	jdata, err := json.Marshal(exitMap)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -164,7 +164,7 @@ func _exits(c echo.Context) (interface{}, int, error) {
 		data := Konf.Strings(vpath)
 		return data, 0, nil
 	case 1, 2, 3, 4, 5:
-		data := walk_levels(vpath, lvls, 1)
+		data := walkLevels(vpath, lvls, 1)
 		return data, lvls, nil
 	default:
 		return nil, 0, fmt.Errorf("Invalid number of vendor levels for %s", vendor)
@@ -175,7 +175,7 @@ func _exits(c echo.Context) (interface{}, int, error) {
  * Recursively walk the vendor.servers hash map and return
  */
 
-func walk_levels(path string, levels int, depth int) interface{} {
+func walkLevels(path string, levels int, depth int) interface{} {
 	if levels <= depth {
 		// this level is a map[string]interface
 		us := make(map[string]interface{}, 0)
@@ -183,7 +183,7 @@ func walk_levels(path string, levels int, depth int) interface{} {
 		for _, key := range keys {
 			newpath := path + "." + key
 			fmt.Printf("going deeper: %s\n", newpath)
-			us[key] = walk_levels(newpath, levels, depth+1)
+			us[key] = walkLevels(newpath, levels, depth+1)
 		}
 		return us
 	} else {

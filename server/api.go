@@ -28,8 +28,8 @@ func Server2ServerList(vendor string, path []string) (*ServerList, error) {
 		ips, err := net.LookupHost(s)
 		if err != nil {
 			// failed to resolve
-			is_ip, _ := regexp.Match(`\d+\.\d+\.\d+\.\d+`, []byte(s))
-			if !is_ip {
+			isIP, _ := regexp.Match(`\d+\.\d+\.\d+\.\d+`, []byte(s))
+			if !isIP {
 				// weren't able to resolve a FQDN
 				log.Printf("Unable to resolve: %s", s)
 				continue

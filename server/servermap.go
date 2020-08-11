@@ -28,18 +28,18 @@ type ServerMap struct {
 	Parent   *ServerMap
 	Name     string
 	List     []string
-	Map      map[string]ServerMap
+	Map      map[string]*ServerMap
 }
 
-func newServerMap(parent *ServerMap, name string, vendor string, link_keys bool) *ServerMap {
+func newServerMap(parent *ServerMap, name string, vendor string, linkKeys bool) *ServerMap {
 	return &ServerMap{
 		mux:      sync.Mutex{},
 		Parent:   parent,
 		Name:     name,
 		Vendor:   vendor,
-		LinkKeys: link_keys,
+		LinkKeys: linkKeys,
 		List:     []string{},
-		Map:      map[string]ServerMap{},
+		Map:      map[string]*ServerMap{},
 	}
 }
 
@@ -48,19 +48,19 @@ func newServerMap(parent *ServerMap, name string, vendor string, link_keys bool)
  * they are neither a Map or a List.  Once you call addMap, addList
  * or appendList, then it becomes that type
  */
-func (sm ServerMap) hasList() bool {
+func (sm *ServerMap) hasList() bool {
 	return len(sm.List) > 0
 }
 
-func (sm ServerMap) hasMap() bool {
+func (sm *ServerMap) hasMap() bool {
 	return len(sm.Map) > 0
 }
 
-func (sm ServerMap) getList() []string {
+func (sm *ServerMap) getList() []string {
 	return sm.List
 }
 
-func (sm *ServerMap) getMap() map[string]ServerMap {
+func (sm *ServerMap) getMap() map[string]*ServerMap {
 	return sm.Map
 }
 
@@ -68,7 +68,7 @@ func (sm *ServerMap) addList(key string, servers []string) {
 	// someday, maybe we'll even be able to use this mutex
 	sm.mux.Lock()
 	defer sm.mux.Unlock()
-	sm.Map[key] = ServerMap{List: servers}
+	sm.Map[key] = &ServerMap{List: servers}
 }
 
 func (sm *ServerMap) appendList(servers []string) {
@@ -80,7 +80,7 @@ func (sm *ServerMap) appendList(servers []string) {
 func (sm *ServerMap) addMap(key string, mdata *ServerMap) {
 	sm.mux.Lock()
 	defer sm.mux.Unlock()
-	sm.Map[key] = *mdata
+	sm.Map[key] = mdata
 }
 
 /*
@@ -106,7 +106,7 @@ func FindServerMapEntry(sm *ServerMap, value string) ([]string, error) {
 				return []string{key}, nil
 			}
 			// recurse
-			path, err := FindServerMapEntry(&x, value)
+			path, err := FindServerMapEntry(x, value)
 			if err == nil {
 				log.Printf("Found hit in a map for %s: %s", value, path)
 				path = append([]string{key}, path...)
@@ -120,12 +120,12 @@ func FindServerMapEntry(sm *ServerMap, value string) ([]string, error) {
 /*
  * Walks a server map and prints it out
  */
-func walkServerMap(sm ServerMap) {
+func walkServerMap(sm *ServerMap) {
 	_walkServerMap(sm, 0)
 }
 
 // helper function for walkServerMap()
-func _walkServerMap(sm ServerMap, depth int) {
+func _walkServerMap(sm *ServerMap, depth int) {
 	if sm.hasList() {
 		l := sm.getList()
 		for _, server := range l {
@@ -164,7 +164,7 @@ func insertServers(head *ServerMap, location []string, servers []string) error {
 		if head.hasMap() {
 			m := head.getMap()
 			x := m[key]
-			insertServers(&x, loc, servers)
+			insertServers(x, loc, servers)
 		} else {
 			m := &ServerMap{}
 			head.addMap(key, m)
@@ -178,7 +178,7 @@ func insertServers(head *ServerMap, location []string, servers []string) error {
  * Get a list of servers using the provided location
  * if the location doesn't map to a list of servers, return error
  */
-func (sm ServerMap) getServers(location []string) ([]string, error) {
+func (sm *ServerMap) getServers(location []string) ([]string, error) {
 	// if our location includes the vendor + vendor_name, strip that
 	if location[0] == "vendor" {
 		location = location[2:len(location)]
@@ -200,7 +200,7 @@ func (sm ServerMap) getServers(location []string) ([]string, error) {
 /*
  * Needed for importing into the html/template
  */
-func (sm ServerMap) GenHTMLTemplate() (template.HTML, error) {
+func (sm *ServerMap) GenHTMLTemplate() (template.HTML, error) {
 	// FIXME: is there some way to pass the url in from the select_exit.html template?
 	s, err := sm.GenHTML("/select_exit", sm.Vendor)
 	if err != nil {
@@ -210,7 +210,7 @@ func (sm ServerMap) GenHTMLTemplate() (template.HTML, error) {
 	return template.HTML(s), nil
 }
 
-func (sm ServerMap) mapKeyToLabel(key string) (string, error) {
+func (sm *ServerMap) mapKeyToLabel(key string) (string, error) {
 	if !sm.LinkKeys || len(sm.Vendor) == 0 {
 		return key, nil
 	} else {
@@ -221,7 +221,7 @@ func (sm ServerMap) mapKeyToLabel(key string) (string, error) {
 /*
  * Generates a HTML tree representation of a ServerMap
  */
-func (sm ServerMap) GenHTML(baseurl string, vendor string) (string, error) {
+func (sm *ServerMap) GenHTML(baseurl string, vendor string) (string, error) {
 	var html bytes.Buffer
 
 	/*
@@ -229,7 +229,7 @@ func (sm ServerMap) GenHTML(baseurl string, vendor string) (string, error) {
 	 * level variable (baseurl) from inside a loop (range exits)
 	 * because html.template kinda sucks
 	 */
-	list_tmpl, _ := template.New("server_list").Parse(
+	listTmpl, _ := template.New("server_list").Parse(
 		fmt.Sprintf(
 			heredoc.Doc(
 				`{{range $name := .}}
@@ -244,7 +244,7 @@ func (sm ServerMap) GenHTML(baseurl string, vendor string) (string, error) {
 	if sm.hasList() {
 		l := sm.getList()
 		if len(l) > 1 {
-			err := list_tmpl.Execute(&html, l)
+			err := listTmpl.Execute(&html, l)
 			if err != nil {
 				log.Fatal(err.Error())
 			}

@@ -13,40 +13,40 @@ import (
 type SpeedtestResults struct {
 	SpeedtestUrl string // yes, this need to be here ???
 	// GlobalState values
-	Vendor        string
-	Exit          string
-	ExitPath      []string
-	Connected_str string
+	Vendor       string
+	Exit         string
+	ExitPath     []string
+	ConnectedStr string
 	// Speedtest values
-	Type               string
-	Timestamp          string
-	Ping_jitter        float64
-	Ping_latency       float64
-	Download_bandwidth float64
-	Download_bytes     float64
-	Download_elapsed   float64
-	Upload_bandwidth   float64
-	Upload_bytes       float64
-	Upload_elapsed     float64
-	Packetloss         float64
-	Isp                string
-	External_ip        string
-	Server_id          float64
-	Server_name        string
-	Server_location    string
-	Server_country     string
-	Server_host        string
-	Server_port        float64
-	Server_ip          string
-	Result_id          string
-	Result_url         string
+	Type              string
+	Timestamp         string
+	PingJitter        float64
+	PingLatency       float64
+	DownloadBandwidth float64
+	DownloadBytes     float64
+	DownloadElapsed   float64
+	UploadBandwidth   float64
+	UploadBytes       float64
+	UploadElapsed     float64
+	Packetloss        float64
+	Isp               string
+	ExternalIP        string
+	ServerID          float64
+	ServerName        string
+	ServerLocation    string
+	ServerCountry     string
+	ServerHost        string
+	ServerPort        float64
+	ServerIP          string
+	ResultID          string
+	ResultUrl         string
 }
 
 type SpeedtestRemote struct {
 	SpeedtestUrl string
 }
 
-func run_speedtest(c echo.Context) (SpeedtestResults, error) {
+func runSpeedtest(c echo.Context) (SpeedtestResults, error) {
 	args := []string{"-f", "json"}
 	if Konf.Exists("serverid") {
 		args = append(args, "-s", string(Konf.Int("serverid")))
@@ -91,33 +91,33 @@ func run_speedtest(c echo.Context) (SpeedtestResults, error) {
 	}
 
 	SR := SpeedtestResults{
-		SpeedtestUrl:       "",
-		Vendor:             GS.Vendor,
-		Exit:               GS.Exit,
-		ExitPath:           GS.ExitPath,
-		Connected_str:      GS.Connected_str,
-		Type:               jdata["type"].(string),
-		Timestamp:          jdata["timestamp"].(string),
-		Ping_jitter:        ping["jitter"].(float64),
-		Ping_latency:       ping["latency"].(float64),
-		Download_bandwidth: download["bandwidth"].(float64),
-		Download_bytes:     download["bytes"].(float64),
-		Download_elapsed:   download["elapsed"].(float64),
-		Upload_bandwidth:   upload["bandwidth"].(float64),
-		Upload_bytes:       upload["bytes"].(float64),
-		Upload_elapsed:     upload["elapsed"].(float64),
-		Packetloss:         jdata["packetloss"].(float64),
-		Isp:                jdata["isp"].(string),
-		External_ip:        iface["externalIp"].(string),
-		Server_id:          server["id"].(float64),
-		Server_name:        server["name"].(string),
-		Server_location:    server["location"].(string),
-		Server_country:     server["country"].(string),
-		Server_host:        server["host"].(string),
-		Server_port:        server["port"].(float64),
-		Server_ip:          server["ip"].(string),
-		Result_id:          result["id"].(string),
-		Result_url:         result["url"].(string),
+		SpeedtestUrl:      "",
+		Vendor:            GS.Vendor,
+		Exit:              GS.Exit,
+		ExitPath:          GS.ExitPath,
+		ConnectedStr:      GS.ConnectedStr,
+		Type:              jdata["type"].(string),
+		Timestamp:         jdata["timestamp"].(string),
+		PingJitter:        ping["jitter"].(float64),
+		PingLatency:       ping["latency"].(float64),
+		DownloadBandwidth: download["bandwidth"].(float64),
+		DownloadBytes:     download["bytes"].(float64),
+		DownloadElapsed:   download["elapsed"].(float64),
+		UploadBandwidth:   upload["bandwidth"].(float64),
+		UploadBytes:       upload["bytes"].(float64),
+		UploadElapsed:     upload["elapsed"].(float64),
+		Packetloss:        jdata["packetloss"].(float64),
+		Isp:               jdata["isp"].(string),
+		ExternalIP:        iface["externalIp"].(string),
+		ServerID:          server["id"].(float64),
+		ServerName:        server["name"].(string),
+		ServerLocation:    server["location"].(string),
+		ServerCountry:     server["country"].(string),
+		ServerHost:        server["host"].(string),
+		ServerPort:        server["port"].(float64),
+		ServerIP:          server["ip"].(string),
+		ResultID:          result["id"].(string),
+		ResultUrl:         result["url"].(string),
 	}
 
 	return SR, nil
@@ -137,7 +137,7 @@ func Speedtest(c echo.Context) error {
 		if !Konf.Exists("speedtest_cli") {
 			return c.Render(http.StatusOK, "error.html", "CLI speedtest is not configured")
 		}
-		SR, err := run_speedtest(c)
+		SR, err := runSpeedtest(c)
 		if err != nil {
 			return c.Render(http.StatusOK, "error.html", err.Error())
 		}
