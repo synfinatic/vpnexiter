@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/subtle"
+	"flag"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -17,38 +18,38 @@ import (
 )
 
 type GlobalState struct {
-	Connected     tribool.Tribool
-	Connected_str string
-	Vendor        string
-	Exit          string
-	ExitPath      []string
-	StatusOutput  string
-	VPN           *vpn.VpnServer
-	Vendors       map[string]*VendorConfig
+	Connected    tribool.Tribool
+	ConnectedStr string
+	Vendor       string
+	Exit         string
+	ExitPath     []string
+	StatusOutput string
+	VPN          *vpn.VpnServer
+	Vendors      map[string]*VendorConfig
 }
 
 var GS = GlobalState{
-	Connected:     tribool.Maybe,
-	Connected_str: "Down",
-	Vendor:        "Unknown",
-	Exit:          "Unselected",
-	ExitPath:      []string{},
-	StatusOutput:  "",
-	VPN:           nil,
-	Vendors:       nil,
+	Connected:    tribool.Maybe,
+	ConnectedStr: "Down",
+	Vendor:       "Unknown",
+	Exit:         "Unselected",
+	ExitPath:     []string{},
+	StatusOutput: "",
+	VPN:          nil,
+	Vendors:      nil,
 }
 
 func (gs *GlobalState) SetState(state tribool.Tribool) {
 	log.Printf("reporting the VPN connection status is: %s\n", state)
 	if state == tribool.True {
 		gs.Connected = tribool.True
-		gs.Connected_str = "Up"
+		gs.ConnectedStr = "Up"
 	} else if state == tribool.False {
 		gs.Connected = tribool.False
-		gs.Connected_str = "Down"
+		gs.ConnectedStr = "Down"
 	} else {
 		gs.Connected = tribool.Maybe
-		gs.Connected_str = "Unknown State"
+		gs.ConnectedStr = "Unknown State"
 	}
 }
 
@@ -129,7 +130,7 @@ func SelectExit(c echo.Context) error {
 		}
 		GS.StatusOutput = buf.String()
 
-		log.Printf("Looking for exit '%s' in %v\n", exit, GS.Vendors[vendor].Servers)
+		log.Printf("Looking for exit '%s' in %v\n", exit, &GS.Vendors[vendor].Servers)
 		path, err := FindServerMapEntry(&GS.Vendors[vendor].Servers, exit)
 		if err != nil {
 			return c.Render(http.StatusOK, "error.html", err.Error())
@@ -159,7 +160,7 @@ func BasicAuthHandler(username string, password string, c echo.Context) (bool, e
 	return false, nil
 }
 
-func empty_string(str string) bool {
+func emptyString(str string) bool {
 	if str == "" {
 		return true
 	}
@@ -167,15 +168,15 @@ func empty_string(str string) bool {
 }
 
 // speedtest -f json returns bytes/sec
-func bps_to_mbps(bps float64) string {
+func bpsToMbps(bps float64) string {
 	return fmt.Sprintf("%.02f", (bps * 8 / (1000 * 1000)))
 }
 
-func float64_to_str(val float64) string {
+func float64ToStr(val float64) string {
 	return fmt.Sprintf("%.02f", val)
 }
 
-func float64_to_int(val float64) int {
+func float64ToInt(val float64) int {
 	return (int)(val)
 }
 
@@ -184,7 +185,7 @@ func float64_to_int(val float64) int {
  * Allows us to asyncly load our GS.Vendors at startup and then
  * refresh our cache every X minutes
  */
-func load_vendors() {
+func loadVendors() {
 	GS.Vendors = LoadVendors()
 	if Konf.Exists("dns_refresh_minutes") {
 		if Konf.Int64("dns_refresh_minutes") >= 5 {
@@ -201,10 +202,14 @@ func load_vendors() {
 }
 
 func main() {
+	var cfile string
+	flag.StringVar(&cfile, "config", "", "Path to vpnexiter config.yaml")
+	flag.Parse()
+
+	LoadConfig(cfile)
+	go loadVendors()
 	e := echo.New()
 	e.Use(middleware.Logger()) // debug logging: https://echo.labstack.com/middleware/logger
-	LoadConfig()
-	go load_vendors()
 
 	// Enable basic auth?
 	if Konf.Exists("listen.username") && Konf.Exists("listen.password") {
@@ -220,10 +225,10 @@ func main() {
 	// serve templates
 	funcMap := template.FuncMap{
 		"StringsJoin":  strings.Join,
-		"EmptyString":  empty_string,
-		"BpsToMbps":    bps_to_mbps,
-		"Float64ToInt": float64_to_int,
-		"Float64ToStr": float64_to_str,
+		"EmptyString":  emptyString,
+		"BpsToMbps":    bpsToMbps,
+		"Float64ToInt": float64ToInt,
+		"Float64ToStr": float64ToStr,
 		// "GenerateMenu": GenerateMenu,
 	}
 	t := &Template{
@@ -241,7 +246,7 @@ func main() {
 	e.GET("/speedtest/", speedtest)
 	e.GET("/speedtest/host/:host", speedtest)
 	e.GET("/speedtest/id/:serverid", speedtest)
-	e.GET("/speedtest/servers", speedtest_servers)
+	e.GET("/speedtest/servers", speedtestServers)
 
 	/*
 	 * AJAX Calls
@@ -273,5 +278,6 @@ func main() {
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4", servers)
 	e.GET("/servers/:vendor/:l0/:l1/:l2/:l3/:l4/:l5", servers)
 	listen := fmt.Sprintf("%s:%d", Konf.String("listen.address"), Konf.Int("listen.http"))
+	log.Printf("Listening on %s", listen)
 	e.Logger.Fatal(e.Start(listen))
 }

@@ -28,7 +28,7 @@ run:
 	go run server/*.go
 
 clean:
-	rm -f main
+	rm -rf dist
 
 clean-go:
 	go clean -i -r -cache -modcache

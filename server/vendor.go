@@ -38,9 +38,9 @@ func LoadVendors() map[string]*VendorConfig {
 		search := strings.Join(start, ".")
 		resolve := Konf.Bool(vendor + ".resolve_servers")
 		if len(vcmap[vendor].Levels) == 0 {
-			vcmap[vendor].Servers.load_servers(search, "", resolve)
+			vcmap[vendor].Servers.loadServers(search, "", resolve)
 		} else {
-			build_server_map(&vcmap[vendor].Servers, start, vcmap[vendor].Levels, resolve)
+			buildServerMap(&vcmap[vendor].Servers, start, vcmap[vendor].Levels, resolve)
 		}
 		t := time.Now()
 		log.Printf("Finished loading %s in %.2fsec", vendor, t.Sub(begin).Seconds())
@@ -49,23 +49,23 @@ func LoadVendors() map[string]*VendorConfig {
 }
 
 /*
- * helper for build_server_map().  Was intended to execute as a go-routine to
+ * helper for buildServerMap().  Was intended to execute as a go-routine to
  * speed up DNS queries, but turns out that doesn't work on OSX because
  * net.LookupHost() is just a proxy for gethostbyname() which is not re-entrant.
  *
  * More info: https://golang.org/pkg/net/#hdr-Name_Resolution
  */
-func (sm *ServerMap) load_servers(search string, key string, resolve bool) {
-	server_search := search
+func (sm *ServerMap) loadServers(search string, key string, resolve bool) {
+	serverSearch := search
 
 	/*
 	 * if key is empty, then we don't want to add another level to sm, but rather
 	 * we want to add items directly to sm
 	 */
 	if len(key) > 0 {
-		server_search = fmt.Sprintf("%s.%s", search, key)
+		serverSearch = fmt.Sprintf("%s.%s", search, key)
 	}
-	servers := Konf.Strings(server_search)
+	servers := Konf.Strings(serverSearch)
 	if resolve {
 		l := newServerMap(sm, key, sm.Vendor, true)
 		for _, fqdn := range servers {
@@ -96,7 +96,7 @@ func (sm *ServerMap) load_servers(search string, key string, resolve bool) {
 			// no key?  move the elments of l into sm
 			sm.appendList(l.getList())
 			for k, v := range l.getMap() {
-				sm.addMap(k, &v)
+				sm.addMap(k, v)
 			}
 		}
 	} else {
@@ -113,13 +113,13 @@ func (sm *ServerMap) load_servers(search string, key string, resolve bool) {
  * Recursive function to populate the ServerMap with the config
  * data from Viper
  */
-func build_server_map(sm *ServerMap, location []string, levels []string, resolve bool) {
-	level_cnt := len(levels)
+func buildServerMap(sm *ServerMap, location []string, levels []string, resolve bool) {
+	levelCount := len(levels)
 	search := strings.Join(location, ".")
 
-	if level_cnt == 1 {
+	if levelCount == 1 {
 		for _, key := range Konf.MapKeys(search) {
-			sm.load_servers(search, key, resolve)
+			sm.loadServers(search, key, resolve)
 		}
 	} else {
 		// pop off the next level
@@ -131,7 +131,7 @@ func build_server_map(sm *ServerMap, location []string, levels []string, resolve
 			// attach our new_map to ourself
 			sm.addMap(key, new_map)
 			// recurse
-			build_server_map(new_map, loc, levels, resolve)
+			buildServerMap(new_map, loc, levels, resolve)
 		}
 	}
 }

@@ -1,0 +1,168 @@
+listen:
+  http: 5000
+  address: 192.168.1.1  # listen on internal interface
+  #  username: admin
+  # htpasswd -nbB admin password
+  # https://godoc.org/golang.org/x/crypto/bcrypt
+  #password: $2y$05$XfpFYmjy/rR36Jk6QDAEa.HU4pCuV4so9S4jvPPr4w4.J4GMCYHLa
+
+speedtest_cli: /usr/local/bin/speedtest
+# this is my custom speedtest url, but you can create your own
+speedtest_url: https://synfin.speedtestcustom.com
+
+router:
+  mode: ssh  # local | ssh
+  config_file: /etc/ipsec.conf
+  start_command: sudo /usr/sbin/ipsec start
+  stop_command: sudo /usr/sbin/ipsec stop
+  check:
+    command: sudo /usr/sbin/ipsec status {{.Vendor}}
+    match: 'ESTABLISHED'
+  status_command: sudo /usr/sbin/ipsec status {{.Vendor}}
+  # below this point is for ssh support only
+  host: 172.16.1.1  # IP or FQDN
+  port: 22
+  username: admin
+  password: XXXXXXXX
+
+vendors:
+  - Witopia
+
+Witopia:
+  config_template: witopia_ipsec.conf.tmpl
+  resolve_servers: true  # set to false if you don't want to see IP addresses in the menu
+  levels:
+    - Region
+    - Country/City
+  servers:
+    Africa/Middle East:
+      Israel:
+        - ipsec.jerusalem.witopia.net
+      South Africa:
+        - ipsec.johannesburg.witopia.net
+    Asia:
+      Hong Kong:
+        - ipsec.hongkong.witopia.net
+      India:
+        - ipsec.mumbai.witopia.net
+        - ipsec.newdelhi.witopia.net
+      Japan:
+        - ipsec.tokyo.witopia.net
+      Malaysia:
+        - ipsec.kualalumpur.witopia.net
+      Singapore:
+        - ipsec.singapore.witopia.net
+      South Korea:
+        - ipsec.seoul.witopia.net
+      Thailand:
+        - ipsec.bangkok.witopia.net
+      Vietnam:
+        - ipsec.hanoi.witopia.net
+    USA:
+      Ashburn:
+        - ipsec.ashburn.witopia.net
+      Atlanta:
+        - ipsec.atlanta.witopia.net
+      Baltimore:
+        - ipsec.baltimore.witopia.net
+      Boston:
+        - ipsec.boston.witopia.net
+      Chicago:
+        - ipsec.chicago.witopia.net
+      Dallas:
+        - ipsec.dallas.witopia.net
+      Denver:
+        - ipsec.denver.witopia.net
+      Kansas City:
+        - ipsec.kansascity.witopia.net
+      Los Angeles:
+        - ipsec.losangeles.witopia.net
+      Las Vegas:
+        - ipsec.lasvegas.witopia.net
+      Miami:
+        - ipsec.miami.witopia.net
+      Newark:
+        - ipsec.newark.witopia.net
+      New York:
+        - ipsec.newyork.witopia.net
+      Phoenix:
+        - ipsec.phoenix.witopia.net
+      Portland:
+        - ipsec.portland.witopia.net
+      Redding:
+        - ipsec.redding.witopia.net
+      San Francisco:
+        - ipsec.sanfrancisco.witopia.net
+      Seattle:
+        - ipsec.seattle.witopia.net
+      Washington, D.C.:
+        - ipsec.washingtondc.witopia.net
+    Canada:
+      Montreal:
+        - ipsec.montreal.witopia.net
+      Toronto:
+        - ipsec.toronto.witopia.net
+      Vancouver:
+        - ipsec.vancouver.witopia.net
+    Central/South America:
+      Mexico:
+        - ipsec.mexicocity.witopia.net
+      Brazil:
+        - ipsec.saopaulo.witopia.net
+    Europe:
+      Belgium:
+        - ipsec.brussels.witopia.net
+      Czech Republic:
+        - ipsec.prague.witopia.net
+      Denmark:
+        - ipsec.copenhagen.witopia.net
+      Finland:
+        - ipsec.helsinki.witopia.net
+      France:
+        - ipsec.paris.witopia.net
+      Iceland:
+        - ipsec.reykjavik.witopia.net
+      Ireland:
+        - ipsec.dublin.witopia.net
+      Italy:
+        - ipsec.milan.witopia.net
+      Latvia:
+        - ipsec.riga.witopia.net
+      Lithuania:
+        - ipsec.vilnius.witopia.net
+      Luxembourg:
+        - ipsec.luxembourg.witopia.net
+      Germany:
+        - ipsec.berlin.witopia.net
+        - ipsec.frankfurt.witopia.net
+      Netherlands:
+        - ipsec.amsterdam.witopia.net
+      Norway:
+        - ipsec.oslo.witopia.net
+      Poland:
+        - ipsec.warsaw.witopia.net
+      Romania:
+        - ipsec.bucharest.witopia.net
+      Russia:
+        - ipsec.moscow.witopia.net
+      Spain:
+        - ipsec.barcelona.witopia.net
+        - ipsec.madrid.witopia.net
+        - ipsec.lisbon.witopia.net
+      Sweeden:
+        - ipsec.stockholm.witopia.net
+      Switzerland:
+        - ipsec.zurich.witopia.net
+      Turkey:
+        - ipsec.istanbul.witopia.net
+      United Kingdom:
+        - ipsec.london.witopia.net
+        - ipsec.manchester.witopia.net
+      Ukraine:
+        - ipsec.kiev.witopia.net
+    Oceania:
+      Australia:
+        - ipsec.melbourne.witopia.net
+        - ipsec.sydney.witopia.net
+      New Zealand:
+        - ipsec.auckland.witopia.net
