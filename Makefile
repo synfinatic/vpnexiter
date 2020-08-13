@@ -18,14 +18,14 @@ OUTPUT_VPNEXIT     := $(DIST_DIR)vpnexiter-$(VPNEXIT_VERSION)-$(GOOS)-$(ARCH)$(E
 
 ALL: vpnexiter
 
-build: server/vpnexiter.go
+build: cmd/vpnexiter.go
 	go build ./...
 
 test: test-race vet unittest
 
 PHONY: run
 run:
-	go run server/*.go
+	go run cmd/*.go
 
 clean:
 	rm -rf dist
@@ -36,10 +36,10 @@ clean-go:
 vpnexiter: $(OUTPUT_VPNEXIT)
 
 $(OUTPUT_VPNEXIT): prepare
-	go build -ldflags $(LDFLAGS) -o $(OUTPUT_VPNEXIT) server/*.go
+	go build -ldflags $(LDFLAGS) -o $(OUTPUT_VPNEXIT) cmd/*.go
 
 debug:
-	dlv debug server/*.go
+	dlv debug cmd/*.go
 
 PHONY: docker-run
 	docker run -it --rm -p 5000:5000/tcp $(DOCKER_REPO)/$(VPNEXIT_NAME):latest
