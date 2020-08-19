@@ -199,6 +199,7 @@ func loadVendors() {
 			log.Printf("Warning: `dns_refresh_minutes` is set, but < 5 so ignoring")
 		}
 	}
+	log.Printf("Vendor config loading complete!")
 }
 
 func main() {

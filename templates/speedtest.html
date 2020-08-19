@@ -1,16 +1,16 @@
 {{define "speedtest.html"}}
-{{if EmptyString .SpeedtestUrl}}
+{{if EmptyString .SpeedtestURL}}
 <ul>
-    <li>Ping latency: {{ .Ping_latency }}ms / jitter: {{ .Ping_jitter }}ms</li>
+    <li>Ping latency: {{ .PingLatency }}ms / jitter: {{ .PingJitter }}ms</li>
     <li>Packet Loss: {{ Float64ToStr .Packetloss }}%</li>
-    <li>Download: {{ BpsToMbps .Download_bandwidth }}Mbps</li>
-    <li>Upload: {{ BpsToMbps .Upload_bandwidth }}Mbps</li>
+    <li>Download: {{ BpsToMbps .DownloadBandwidth }}Mbps</li>
+    <li>Upload: {{ BpsToMbps .UploadBandwidth }}Mbps</li>
     <li>ISP: {{ .Isp }}</li>
-    <li>External IP: {{ .External_ip }}</li>
-    <li>Server ID: {{ .Server_id }}</li>
-    <li>Server Name: {{ .Server_name }}</li>
-    <li>Server Location: {{ .Server_location }}</li>
-    <li>Server Host: {{ .Server_host }}</li>
+    <li>External IP: {{ .ExternalIP }}</li>
+    <li>Server ID: {{ .ServerID }}</li>
+    <li>Server Name: {{ .ServerName }}</li>
+    <li>Server Location: {{ .ServerLocation }}</li>
+    <li>Server Host: {{ .ServerHost }}</li>
     <!--
         The Result_url contains the speedtest.net results on their website
         in a pretty manner.  I wonder if we can do something pretty with it?
@@ -23,10 +23,10 @@
 
         Can we just do a Ajax call and return that part of the dom in an iframe?
     -->
-    <li>Result on Speedtest.net: <a href="{{ .Result_url }}">Click Here</a></li>
+    <li>Result on Speedtest.net: <a href="{{ .ResultURL }}">Click Here</a></li>
 </ul>
 {{else}}
-<iframe width="100%" height="650px" frameborder="0" src="{{ .SpeedtestUrl }}"></iframe>
+<iframe width="100%" height="650px" frameborder="0" src="{{ .SpeedtestURL }}"></iframe>
 {{end}}
 {{end}}
 

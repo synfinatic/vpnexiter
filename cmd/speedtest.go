@@ -11,7 +11,7 @@ import (
 )
 
 type SpeedtestResults struct {
-	SpeedtestUrl string // yes, this need to be here ???
+	SpeedtestURL string // yes, this need to be here ???
 	// GlobalState values
 	Vendor       string
 	Exit         string
@@ -39,11 +39,11 @@ type SpeedtestResults struct {
 	ServerPort        float64
 	ServerIP          string
 	ResultID          string
-	ResultUrl         string
+	ResultURL         string
 }
 
 type SpeedtestRemote struct {
-	SpeedtestUrl string
+	SpeedtestURL string
 }
 
 func runSpeedtest(c echo.Context) (SpeedtestResults, error) {
@@ -91,7 +91,7 @@ func runSpeedtest(c echo.Context) (SpeedtestResults, error) {
 	}
 
 	SR := SpeedtestResults{
-		SpeedtestUrl:      "",
+		SpeedtestURL:      "",
 		Vendor:            GS.Vendor,
 		Exit:              GS.Exit,
 		ExitPath:          GS.ExitPath,
@@ -117,7 +117,7 @@ func runSpeedtest(c echo.Context) (SpeedtestResults, error) {
 		ServerPort:        server["port"].(float64),
 		ServerIP:          server["ip"].(string),
 		ResultID:          result["id"].(string),
-		ResultUrl:         result["url"].(string),
+		ResultURL:         result["url"].(string),
 	}
 
 	return SR, nil
@@ -131,7 +131,7 @@ func Speedtest(c echo.Context) error {
 			return c.Render(http.StatusOK, "error.html", "Embeded speedtest is not configured")
 		}
 		url := Konf.String("speedtest_url")
-		SR := SpeedtestRemote{SpeedtestUrl: url}
+		SR := SpeedtestRemote{SpeedtestURL: url}
 		return c.Render(http.StatusOK, "speedtest.html", SR)
 	} else if mode == "server" {
 		if !Konf.Exists("speedtest_cli") {
