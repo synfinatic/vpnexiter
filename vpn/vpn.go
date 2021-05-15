@@ -3,11 +3,12 @@ package vpn
 import (
 	"bytes"
 	"fmt"
-	"github.com/knadh/koanf"
-	"gopkg.in/grignaak/tribool.v1"
 	"io/ioutil"
 	"log"
 	"text/template"
+
+	"github.com/knadh/koanf"
+	"gopkg.in/grignaak/tribool.v1"
 )
 
 type VpnServer struct {

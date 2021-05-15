@@ -4,17 +4,18 @@ import (
 	"crypto/subtle"
 	"flag"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/synfinatic/vpnexiter/vpn"
-	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/grignaak/tribool.v1"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/synfinatic/vpnexiter/vpn"
+	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/grignaak/tribool.v1"
 )
 
 type GlobalState struct {
@@ -86,6 +87,15 @@ func Version(c echo.Context) error {
 
 func Status(c echo.Context) error {
 	forced := c.QueryParam("forced") // forced=1
+	/*
+		action := c.Param("action")      // start | stop
+
+			if action != nil and action != "" {
+				// start or stop the service manually
+
+			}
+	*/
+
 	if GS.Connected == tribool.Maybe || len(forced) > 0 {
 		log.Printf("Checking status of VPN\n")
 		trib, err := GS.VPN.IsUp()
@@ -239,6 +249,7 @@ func main() {
 	e.GET("/", Index)
 	e.GET("/version", Version)
 	e.GET("/status", Status)
+	e.GET("/status/:action", Status)
 	e.GET("/select_exit", SelectExit)
 	e.GET("/select_exit/:vendor/:exit", SelectExit)
 

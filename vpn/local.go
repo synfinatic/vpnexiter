@@ -3,12 +3,13 @@ package vpn
 import (
 	"bytes"
 	"fmt"
-	"gopkg.in/grignaak/tribool.v1"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"gopkg.in/grignaak/tribool.v1"
 )
 
 /*

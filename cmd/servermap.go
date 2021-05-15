@@ -3,12 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/MakeNowJust/heredoc"
 	"html/template"
 	"log"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/MakeNowJust/heredoc"
 )
 
 /*
