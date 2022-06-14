@@ -2,3 +2,4 @@ dist/
 .*.sw?
 conf/
 config.yaml
+tags

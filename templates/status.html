@@ -1,12 +1,30 @@
 {{define "status.html"}}
+
+<script>
+ $( function() {
+    $( ".button input[type=submit], .button a" ).button();
+ }
+</script>
 <ul>
     <li>Status: {{ .ConnectedStr }}</li>
-    {{ if .Connected }}
     <li>Vendor: {{ .Vendor }}</li>
     <li>Exit Node: {{ .Exit }}</li>
     <li>Exit Path: {{ StringsJoin .ExitPath " / " }}</li>
+    {{ if and .Connected .Vendor }}
+    <li>
+	<div class="button">
+	<a href="/status/stop">Stop</a>
+	</div>
+    </li>
 </ul>
 Status:
 <pre>{{ .StatusOutput }}</pre>
+    {{ else if .Vendor }}
+    <li>
+	<div class="button">
+	<a href="/status/start">Start</a>
+	</div>
+    </li>
+</ul>
     {{ end }}
 {{end}}

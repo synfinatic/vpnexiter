@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"log"
 	"net/http"
 	"os/exec"
+
+	"github.com/labstack/echo/v4"
 )
 
 type SpeedtestResults struct {
@@ -49,9 +50,9 @@ type SpeedtestRemote struct {
 func runSpeedtest(c echo.Context) (SpeedtestResults, error) {
 	args := []string{"-f", "json"}
 	if Konf.Exists("serverid") {
-		args = append(args, "-s", string(Konf.Int("serverid")))
+		args = append(args, "-s", fmt.Sprintf("%d", Konf.Int("serverid")))
 	} else if Konf.Exists("host") {
-		args = append(args, "-o", string(Konf.Int("host")))
+		args = append(args, "-o", fmt.Sprintf("%d", Konf.Int("host")))
 	}
 
 	name := Konf.String("speedtest_cli")

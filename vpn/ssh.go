@@ -3,14 +3,15 @@ package vpn
 import (
 	"bytes"
 	"fmt"
-	scp "github.com/bramvdbogaerde/go-scp"
-	"github.com/bramvdbogaerde/go-scp/auth"
-	"golang.org/x/crypto/ssh"
-	"gopkg.in/grignaak/tribool.v1"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	scp "github.com/bramvdbogaerde/go-scp"
+	"github.com/bramvdbogaerde/go-scp/auth"
+	"golang.org/x/crypto/ssh"
+	"gopkg.in/grignaak/tribool.v1"
 )
 
 /*
